@@ -1,0 +1,32 @@
+/** Zonas IANA ofrecidas en el onboarding (ampliable; se valida contra esta lista). */
+export const TIMEZONES = [
+  "America/Mexico_City",
+  "America/Monterrey",
+  "America/Tijuana",
+  "America/Cancun",
+  "America/Bogota",
+  "America/Lima",
+  "America/Guayaquil",
+  "America/Caracas",
+  "America/Santiago",
+  "America/Argentina/Buenos_Aires",
+  "America/Montevideo",
+  "America/Asuncion",
+  "America/La_Paz",
+  "America/Guatemala",
+  "America/El_Salvador",
+  "America/Tegucigalpa",
+  "America/Managua",
+  "America/Costa_Rica",
+  "America/Panama",
+  "America/Santo_Domingo",
+  "America/Puerto_Rico",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Phoenix",
+  "America/Los_Angeles",
+  "Europe/Madrid",
+] as const;
+
+export const CURRENCIES = ["MXN", "USD", "COP", "PEN", "CLP", "ARS", "UYU", "GTQ", "DOP", "EUR"] as const;

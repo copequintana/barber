@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  owner
+  admin
+  barber
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+  no_show
+}
+
+enum CancelledBy {
+  customer
+  shop
+}
+
+enum NotificationChannel {
+  email
+  whatsapp
+  sms
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+}
+
+// ── Tablas globales (sin RLS): identidad y pertenencia ──────────────
+
+model Tenant {
+  id         String  @id @default(uuid()) @db.Uuid
+  name       String
+  slug       String  @unique
+  timezone   String // IANA, p. ej. "America/Mexico_City"
+  currency   String  @default("MXN")
+  plan       String  @default("trial")
+  logoUrl    String? @map("logo_url")
+  brandColor String? @map("brand_color")
+
+  // Reglas de reserva del negocio
+  slotGridMinutes Int @default(15) @map("slot_grid_minutes")
+  minLeadMinutes  Int @default(60) @map("min_lead_minutes")
+  maxAdvanceDays  Int @default(30) @map("max_advance_days")
+  // El cliente puede cancelar/reprogramar hasta N minutos antes de la cita
+  cancelMinMinutes Int @default(120) @map("cancel_min_minutes")
+
+  // Recordatorios y cierre automático (T13/T14)
+  reminder24hEnabled Boolean @default(true) @map("reminder_24h_enabled")
+  reminder2hEnabled  Boolean @default(true) @map("reminder_2h_enabled")
+  whatsappEnabled    Boolean @default(false) @map("whatsapp_enabled")
+  // Citas confirmadas ya pasadas se marcan completadas tras N horas
+  autoCompleteHours  Int     @default(24) @map("auto_complete_hours")
+
+  // Suspensión por la plataforma (T20): sin reservas nuevas en línea
+  suspended Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  memberships   Membership[]
+  barbers       Barber[]
+  services      Service[]
+  customers     Customer[]
+  appointments  Appointment[]
+  workingHours  WorkingHour[]
+  timeOff       TimeOff[]
+  notifications Notification[]
+
+  @@map("tenants")
+}
+
+model User {
+  id              String  @id @default(uuid()) @db.Uuid
+  email           String  @unique
+  name            String?
+  phone           String?
+  isPlatformAdmin Boolean @default(false) @map("is_platform_admin")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  memberships Membership[]
+  barbers     Barber[]
+
+  @@map("users")
+}
+
+model Membership {
+  userId   String @map("user_id") @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  role     Role
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tenantId])
+  @@map("memberships")
+}
+
+// Auditoría de la consola de plataforma (T20): quién hizo qué sobre qué tenant
+model PlatformAuditLog {
+  id       String  @id @default(uuid()) @db.Uuid
+  userId   String  @map("user_id") @db.Uuid
+  tenantId String? @map("tenant_id") @db.Uuid
+  action   String // "view_tenant" | "suspend" | "reactivate" | ...
+  detail   String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([tenantId])
+  @@map("platform_audit_logs")
+}
+
+// ── Tablas de negocio (RLS por tenant_id; ver migración SQL) ────────
+
+model Barber {
+  id          String  @id @default(uuid()) @db.Uuid
+  tenantId    String  @map("tenant_id") @db.Uuid
+  userId      String? @map("user_id") @db.Uuid
+  displayName String  @map("display_name")
+  photoUrl    String? @map("photo_url")
+  bio         String?
+  active      Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  services     BarberService[]
+  workingHours WorkingHour[]
+  timeOff      TimeOff[]
+  appointments Appointment[]
+
+  @@index([tenantId])
+  @@map("barbers")
+}
+
+model Service {
+  id          String  @id @default(uuid()) @db.Uuid
+  tenantId    String  @map("tenant_id") @db.Uuid
+  name        String
+  durationMin Int     @map("duration_min")
+  bufferMin   Int     @default(0) @map("buffer_min")
+  price       Decimal @db.Decimal(10, 2)
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  barbers      BarberService[]
+  appointments Appointment[]
+
+  @@index([tenantId])
+  @@map("services")
+}
+
+model BarberService {
+  tenantId      String   @map("tenant_id") @db.Uuid
+  barberId      String   @map("barber_id") @db.Uuid
+  serviceId     String   @map("service_id") @db.Uuid
+  priceOverride Decimal? @map("price_override") @db.Decimal(10, 2)
+
+  barber  Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([barberId, serviceId])
+  @@index([tenantId])
+  @@map("barber_services")
+}
+
+model WorkingHour {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  barberId String @map("barber_id") @db.Uuid
+  weekday  Int // 0 = domingo … 6 = sábado, en hora local del tenant
+  startMin Int    @map("start_min") // minutos desde medianoche local
+  endMin   Int    @map("end_min")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([barberId, weekday])
+  @@map("working_hours")
+}
+
+model TimeOff {
+  id       String   @id @default(uuid()) @db.Uuid
+  tenantId String   @map("tenant_id") @db.Uuid
+  barberId String   @map("barber_id") @db.Uuid
+  startsAt DateTime @map("starts_at") @db.Timestamptz
+  endsAt   DateTime @map("ends_at") @db.Timestamptz
+  reason   String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([barberId, startsAt])
+  @@map("time_off")
+}
+
+model Customer {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  name     String
+  phone    String
+  email    String?
+  notes    String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@unique([tenantId, phone])
+  @@map("customers")
+}
+
+model Appointment {
+  id             String            @id @default(uuid()) @db.Uuid
+  tenantId       String            @map("tenant_id") @db.Uuid
+  barberId       String            @map("barber_id") @db.Uuid
+  customerId     String            @map("customer_id") @db.Uuid
+  serviceId      String            @map("service_id") @db.Uuid
+  startsAt       DateTime          @map("starts_at") @db.Timestamptz
+  endsAt         DateTime          @map("ends_at") @db.Timestamptz
+  status         AppointmentStatus @default(confirmed)
+  priceAtBooking Decimal           @map("price_at_booking") @db.Decimal(10, 2)
+  cancelToken    String            @unique @default(uuid()) @map("cancel_token") @db.Uuid
+  cancelledBy    CancelledBy?      @map("cancelled_by")
+  cancelReason   String?           @map("cancel_reason")
+  notes          String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  barber        Barber         @relation(fields: [barberId], references: [id], onDelete: Restrict)
+  customer      Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  service       Service        @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  notifications Notification[]
+
+  // Además: constraint EXCLUDE anti-solape en migración SQL manual
+  @@index([tenantId, startsAt])
+  @@index([barberId, startsAt])
+  @@map("appointments")
+}
+
+model Notification {
+  id            String              @id @default(uuid()) @db.Uuid
+  tenantId      String              @map("tenant_id") @db.Uuid
+  appointmentId String              @map("appointment_id") @db.Uuid
+  channel       NotificationChannel
+  type          String // p. ej. "confirmation" | "reminder_24h" | "reminder_2h" | "cancellation"
+  status        NotificationStatus  @default(pending)
+  sentAt        DateTime?           @map("sent_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  // Idempotencia: un mismo recordatorio no se envía dos veces
+  @@unique([appointmentId, type, channel])
+  @@index([tenantId])
+  @@map("notifications")
+}
