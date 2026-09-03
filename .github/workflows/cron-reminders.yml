@@ -1,0 +1,23 @@
+# Cron de recordatorios/cierre (T13/T14) cada 15 min.
+# Vercel Hobby solo permite crons diarios, así que la cadencia real la pone
+# GitHub Actions; el cron de vercel.json (diario) queda como respaldo.
+#
+# Requiere dos secrets en el repo (Settings → Secrets and variables → Actions):
+#   CRON_URL    → https://<tu-proyecto>.vercel.app/api/cron/reminders
+#   CRON_SECRET → el mismo valor que la variable CRON_SECRET en Vercel
+name: cron-reminders
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar /api/cron/reminders
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.CRON_URL }}"
