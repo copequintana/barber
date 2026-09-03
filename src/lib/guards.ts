@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
-import { auth } from "./auth";
+import { getSession } from "./auth";
 import { getMembership } from "./tenancy";
 
 export const ACTIVE_TENANT_COOKIE = "bd_active_tenant";
@@ -20,7 +20,7 @@ export type TenantContext = {
 
 /** Usuario autenticado o redirect a /login. */
 export async function requireUser(): Promise<SessionUser> {
-  const session = await auth();
+  const session = await getSession();
   const user = session?.user;
   if (!user?.id) redirect("/login");
   return { id: user.id, email: user.email, name: user.name };

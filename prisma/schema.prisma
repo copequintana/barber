@@ -87,12 +87,73 @@ model User {
   phone           String?
   isPlatformAdmin Boolean @default(false) @map("is_platform_admin")
 
+  // Campos que gestiona better-auth
+  emailVerified Boolean @default(false) @map("email_verified")
+  image         String?
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   memberships Membership[]
   barbers     Barber[]
+  sessions    Session[]
+  accounts    Account[]
 
   @@map("users")
+}
+
+// ── Tablas de better-auth (globales, sin RLS) ───────────────────────
+
+model Session {
+  id        String   @id @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id         String @id @db.Uuid
+  accountId  String @map("account_id")
+  providerId String @map("provider_id")
+  // Origen de la cuenta (p. ej. "local:credential"). Lo añadió better-auth 1.7.
+  issuer     String
+  userId     String @map("user_id") @db.Uuid
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz
+  scope                 String?
+  password              String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("verifications")
 }
 
 model Membership {

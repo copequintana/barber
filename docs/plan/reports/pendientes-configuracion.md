@@ -32,15 +32,15 @@ No hay que tocar código: al detectar la key, todos los envíos (confirmación, 
    ```
 6. Activa WhatsApp por barbería: `whatsapp_enabled = true` en la tabla `tenants` (la UI de configuración del tenant está en el backlog).
 
-## 3. Login con Google (opcional)
+## 3. Login (Better Auth, email + contraseña)
 
-El login de desarrollo (email libre) cubre las pruebas. Para producción:
+Migrado a Better Auth (2026-09-02): email + contraseña, mismo patrón que
+CopeTrack/CopeCursos. No requiere Google ni otro proveedor externo.
 
-1. En [Google Cloud Console](https://console.cloud.google.com) crea credenciales OAuth 2.0 (tipo Web).
-2. Redirect URI: `https://tudominio.com/api/auth/callback/google`.
-3. En `.env`: `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`. El botón aparece solo.
-
-Alternativa pendiente de decisión: magic link por email (usa la misma cuenta de Resend; pequeño desarrollo adicional).
+1. El registro (`/signup`) queda abierto salvo que `ALLOW_SIGNUP="false"`.
+2. Flujo recomendado en producción: desplegar con registro abierto, crear las
+   cuentas necesarias y cerrar con `ALLOW_SIGNUP=false` + redeploy.
+3. Los usuarios del seed de desarrollo entran con la contraseña `barberdesk123`.
 
 ## 4. Despliegue a producción
 
@@ -49,9 +49,8 @@ Decisiones y pasos cuando quieras salir de local:
 1. **Base de datos**: crear un PostgreSQL gestionado (Neon o Supabase). Poner su URL en `DATABASE_URL` (rol de la app) y `MIGRATE_DATABASE_URL` (rol dueño del esquema; en estos proveedores suele ser el mismo usuario y el RLS con `FORCE` ya lo cubre). Aplicar migraciones: `npm run db:migrate`.
 2. **Hosting**: Vercel es el camino directo (el plan lo asume). Importar el proyecto, configurar todas las variables de `.env.example`.
 3. **Secretos nuevos para producción** (no reutilizar los de dev):
-   - `AUTH_SECRET` (genera uno: `npx auth secret`)
+   - `BETTER_AUTH_SECRET` (32 bytes aleatorios en base64)
    - `CRON_SECRET` (cualquier cadena aleatoria larga)
-   - **Nunca** definir `ALLOW_DEV_LOGIN` en producción.
 4. **Cron**: programar `GET /api/cron/reminders` cada 15 min (Vercel Cron u otro scheduler) con header `Authorization: Bearer <CRON_SECRET>`. Ejecuta recordatorios y cierre automático de citas.
 5. **Subdominios (T16)**: registrar el dominio, crear DNS wildcard `*.tudominio.com` apuntando al hosting, agregar el dominio wildcard en Vercel, y definir `ROOT_DOMAIN="tudominio.com"` y `APP_URL="https://tudominio.com"`. El código ya lo soporta.
 6. **Backups**: activar backups automáticos/PITR en el proveedor de BD.

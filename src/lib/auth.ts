@@ -1,94 +1,69 @@
-import NextAuth from "next-auth";
-import type { Provider } from "next-auth/providers";
-import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import { z } from "zod";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./db";
+import { signupEnabled } from "./flags";
 
 /**
- * Autenticación (T03).
+ * Autenticación (T03, migrada a Better Auth).
  *
- * Estrategia JWT: el token lleva solo la identidad (userId). El tenant activo
- * vive en una cookie propia y el rol se verifica contra `memberships` en cada
- * request (ver guards.ts) — nunca hay roles obsoletos cacheados en el token.
+ * Email + contraseña con sesiones en base de datos. El tenant activo vive en
+ * una cookie propia y el rol se verifica contra `memberships` en cada request
+ * (ver guards.ts) — nunca hay roles obsoletos cacheados.
  *
- * Proveedores:
- *  - "dev-login": entra con cualquier email, solo fuera de producción.
- *  - Google: se activa solo si hay GOOGLE_CLIENT_ID/SECRET en el entorno.
- *  - (Fase 1) Magic link por email con Resend.
+ * El registro público se controla con ALLOW_SIGNUP (ver flags.ts): se abre
+ * para crear las cuentas y luego puede cerrarse sin afectar a las existentes.
  */
 
-/**
- * dev-login se habilita con NODE_ENV != production o con ALLOW_DEV_LOGIN=1
- * (este último permite probar un build de producción en local). En un
- * despliegue real la variable no debe existir.
- */
-export const devLoginEnabled =
-  process.env.NODE_ENV !== "production" ||
-  process.env.ALLOW_DEV_LOGIN === "1";
+// En Vercel el dominio cambia entre despliegues de vista previa, así que se
+// usan las variables que inyecta la plataforma como respaldo de
+// BETTER_AUTH_URL. VERCEL_PROJECT_PRODUCTION_URL es el dominio estable.
+const vercelURLs = [
+  process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  process.env.VERCEL_URL,
+]
+  .filter(Boolean)
+  .map((host) => `https://${host}`);
 
-const providers: Provider[] = [];
+const baseURL = process.env.BETTER_AUTH_URL ?? vercelURLs[0];
 
-if (devLoginEnabled) {
-  providers.push(
-    Credentials({
-      id: "dev-login",
-      name: "Login de desarrollo",
-      credentials: { email: { label: "Email", type: "email" } },
-      async authorize(credentials) {
-        const parsed = z
-          .object({ email: z.string().email() })
-          .safeParse(credentials);
-        if (!parsed.success) return null;
-        const email = parsed.data.email.toLowerCase();
-        const user = await prisma.user.upsert({
-          where: { email },
-          update: {},
-          create: { email, name: email.split("@")[0] },
-        });
-        return { id: user.id, email: user.email, name: user.name };
-      },
-    }),
-  );
-}
+const trustedOrigins = [
+  ...new Set([
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    // Puerto del servidor de los tests e2e (playwright.config.ts)
+    "http://localhost:3100",
+    ...vercelURLs,
+    ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? []),
+  ]),
+];
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  providers.push(Google);
-}
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  // Self-hosted: se confía en el Host del reverse proxy / servidor propio.
-  // (En Vercel lo setea AUTH_TRUST_HOST automáticamente.)
-  trustHost: true,
-  session: { strategy: "jwt" },
-  providers,
-  pages: { signIn: "/login" },
-  callbacks: {
-    async jwt({ token, user, account }) {
-      // Primer sign-in: asegurar que el usuario exista en nuestra tabla y
-      // guardar SU id (no el del proveedor) en el token.
-      if (user?.email) {
-        if (account?.provider === "dev-login") {
-          token.userId = user.id;
-        } else {
-          const dbUser = await prisma.user.upsert({
-            where: { email: user.email.toLowerCase() },
-            update: { name: user.name ?? undefined },
-            create: {
-              email: user.email.toLowerCase(),
-              name: user.name,
-            },
-          });
-          token.userId = dbUser.id;
-        }
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token.userId) {
-        session.user.id = token.userId as string;
-      }
-      return session;
-    },
+export const auth = betterAuth({
+  baseURL,
+  trustedOrigins,
+  database: prismaAdapter(prisma, { provider: "postgresql" }),
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    // Cerrar el registro no afecta a las cuentas ya creadas.
+    disableSignUp: !signupEnabled,
+  },
+  advanced: {
+    // users.id y las FKs son columnas uuid de Postgres
+    database: { generateId: () => crypto.randomUUID() },
   },
 });
+
+/** Sesión del request actual (o null). Solo en Server Components/Actions. */
+export async function getSession() {
+  return auth.api.getSession({ headers: await headers() });
+}
+
+/** Cierra la sesión y redirige. Mismo contrato que el signOut de Auth.js. */
+export async function signOut({ redirectTo }: { redirectTo: string }) {
+  await auth.api.signOut({ headers: await headers() });
+  redirect(redirectTo);
+}

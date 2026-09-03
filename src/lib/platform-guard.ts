@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "./auth";
+import { getSession } from "./auth";
 import { prisma } from "./db";
 import type { PlatformUser } from "./platform";
 
@@ -8,7 +8,7 @@ import type { PlatformUser } from "./platform";
  * PLATFORM_ADMIN_EMAILS (coma-separados; útil en desarrollo).
  */
 export async function requirePlatformAdmin(): Promise<PlatformUser> {
-  const session = await auth();
+  const session = await getSession();
   const sessionUser = session?.user;
   if (!sessionUser?.id) redirect("/login");
 

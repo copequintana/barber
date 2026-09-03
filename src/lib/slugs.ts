@@ -5,7 +5,7 @@
 
 /** Slugs que nunca pueden ser de un tenant (rutas y subdominios del sistema). */
 export const RESERVED_SLUGS = new Set([
-  "www", "app", "api", "admin", "b", "barber", "login", "logout",
+  "www", "app", "api", "admin", "b", "barber", "login", "logout", "signup",
   "onboarding", "select-tenant", "platform", "static", "assets", "docs",
 ]);
 

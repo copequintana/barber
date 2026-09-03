@@ -116,7 +116,7 @@ export async function setBarberServices(barberId: string, formData: FormData) {
 /**
  * Vincula (o crea) la cuenta de usuario del barbero para que pueda entrar a
  * su panel. El email de invitación real llega con T12 (Resend); mientras,
- * el barbero entra con dev-login / Google usando este email.
+ * el barbero se registra en /signup con este mismo email.
  */
 export async function linkBarberUser(barberId: string, formData: FormData) {
   const ctx = await requireTenantRole("owner", "admin");
