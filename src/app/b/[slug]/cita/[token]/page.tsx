@@ -111,7 +111,7 @@ export default async function AppointmentPage({
       {!isCancelled ? (
         <a
           href={`/b/${slug}/cita/${token}/ics`}
-          className="rounded-md border border-black/15 px-4 py-2 text-center font-medium dark:border-white/20"
+          className="rounded-md bg-[var(--brand)] px-4 py-2 text-center font-medium text-white"
         >
           Agregar a mi calendario (.ics)
         </a>

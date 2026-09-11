@@ -118,7 +118,7 @@ export function BookingWizard(props: Props) {
             key={label}
             className={`rounded-full px-2.5 py-1 ${
               step === i + 1
-                ? "bg-foreground text-background"
+                ? "bg-[var(--brand)] text-white"
                 : step > i + 1
                   ? "bg-black/10 dark:bg-white/15"
                   : "opacity-40"
@@ -249,7 +249,7 @@ export function BookingWizard(props: Props) {
                 }}
                 className={`${chipClass} shrink-0 ${
                   d === dateISO
-                    ? "border-transparent bg-foreground text-background"
+                    ? "border-transparent bg-[var(--brand)] text-white"
                     : "border-black/15 dark:border-white/20"
                 }`}
               >
@@ -269,7 +269,7 @@ export function BookingWizard(props: Props) {
                   onClick={() => setStartISO(s.start)}
                   className={`${chipClass} ${
                     startISO === s.start
-                      ? "border-transparent bg-foreground text-background"
+                      ? "border-transparent bg-[var(--brand)] text-white"
                       : "border-black/15 dark:border-white/20"
                   }`}
                 >
@@ -318,7 +318,7 @@ export function BookingWizard(props: Props) {
           <button
             type="submit"
             disabled={pending}
-            className="mt-1 rounded-md bg-foreground px-4 py-2.5 font-medium text-background disabled:opacity-60"
+            className="mt-1 rounded-md bg-[var(--brand)] px-4 py-2.5 font-medium text-white disabled:opacity-60"
           >
             {pending ? "Reservando…" : "Confirmar reserva"}
           </button>

@@ -42,6 +42,9 @@ export default async function AdminLayout({
               <Link href="/admin/reports" className="hover:underline">
                 Reportes
               </Link>
+              <Link href="/admin/settings" className="hover:underline">
+                Configuración
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4 text-sm">

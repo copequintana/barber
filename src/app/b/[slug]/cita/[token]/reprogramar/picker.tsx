@@ -125,7 +125,7 @@ export function ReschedulePicker(props: Props) {
             }}
             className={`${chipClass} shrink-0 ${
               d === dateISO && slots !== null
-                ? "border-transparent bg-foreground text-background"
+                ? "border-transparent bg-[var(--brand)] text-white"
                 : "border-black/15 dark:border-white/20"
             }`}
           >
@@ -151,7 +151,7 @@ export function ReschedulePicker(props: Props) {
               onClick={() => setStartISO(s.start)}
               className={`${chipClass} ${
                 startISO === s.start
-                  ? "border-transparent bg-foreground text-background"
+                  ? "border-transparent bg-[var(--brand)] text-white"
                   : "border-black/15 dark:border-white/20"
               }`}
             >
@@ -167,7 +167,7 @@ export function ReschedulePicker(props: Props) {
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-foreground px-4 py-2.5 font-medium text-background disabled:opacity-60"
+            className="rounded-md bg-[var(--brand)] px-4 py-2.5 font-medium text-white disabled:opacity-60"
           >
             {pending
               ? "Reprogramando…"

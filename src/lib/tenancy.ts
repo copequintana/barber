@@ -6,6 +6,9 @@ import { prisma } from "./db";
  * siempre vía withTenant() en db.ts.
  */
 
+/** Acento cuando el tenant no configuró brandColor (mismo que los emails, T12). */
+export const DEFAULT_BRAND_COLOR = "#1e3a5f";
+
 export function getTenantBySlug(slug: string) {
   return prisma.tenant.findUnique({ where: { slug } });
 }

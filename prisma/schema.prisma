@@ -46,8 +46,12 @@ model Tenant {
   timezone   String // IANA, p. ej. "America/Mexico_City"
   currency   String  @default("MXN")
   plan       String  @default("trial")
-  logoUrl    String? @map("logo_url")
-  brandColor String? @map("brand_color")
+  logoUrl        String? @map("logo_url")
+  brandColor     String? @map("brand_color")
+  coverImageUrl  String? @map("cover_image_url")
+  // Contacto público (T-UX01): se muestran en /b/[slug] si están definidos
+  phone          String?
+  address        String?
 
   // Reglas de reserva del negocio
   slotGridMinutes Int @default(15) @map("slot_grid_minutes")
