@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { BarChart3, CalendarDays, Clock, Link2, Scissors } from "lucide-react";
+import { BarChart3, CalendarDays, Clock, Link2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getSession } from "@/lib/auth";
 import { signupEnabled } from "@/lib/flags";
@@ -41,7 +42,7 @@ export default async function HomePage() {
 
       <section className="flex flex-col items-center gap-6 text-center">
         <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide opacity-60">
-          <Scissors className="h-4 w-4" /> BarberDesk
+          <Image src="/logo-mark.png" alt="" width={20} height={20} /> BarberDesk
         </p>
         <h1 className="text-4xl font-bold sm:text-5xl">
           Agenda de barbería, sin llamadas ni WhatsApp perdido

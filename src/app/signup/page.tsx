@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
@@ -13,6 +14,12 @@ export default async function SignupPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
       <div>
+        <div className="mb-1 flex items-center gap-2">
+          <Image src="/logo-mark.png" alt="" width={24} height={24} />
+          <span className="text-xs font-semibold uppercase tracking-wide opacity-60">
+            BarberDesk
+          </span>
+        </div>
         <h1 className="text-2xl font-bold">Crear cuenta</h1>
         <p className="text-sm opacity-70">
           Después de registrarte podrás dar de alta tu barbería.

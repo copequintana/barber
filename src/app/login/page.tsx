@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
@@ -13,7 +14,10 @@ export default async function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
       <div>
-        <h1 className="text-2xl font-bold">BarberDesk</h1>
+        <div className="flex items-center gap-2">
+          <Image src="/logo-mark.png" alt="" width={28} height={28} />
+          <h1 className="text-2xl font-bold">BarberDesk</h1>
+        </div>
         <p className="text-sm opacity-70">Entra para administrar tu barbería.</p>
       </div>
 

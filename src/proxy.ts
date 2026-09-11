@@ -50,5 +50,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Solo pÃ¡ginas: excluye estÃ¡ticos, assets y la API
-  matcher: ["/((?!_next|api/|favicon.ico|icon.svg|manifest.webmanifest).*)"],
+  matcher: [
+    "/((?!_next|api/|favicon.ico|icon.svg|icon.png|logo-512.png|logo-mark.png|manifest.webmanifest).*)",
+  ],
 };
