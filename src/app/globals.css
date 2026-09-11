@@ -3,18 +3,28 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Acento de marca de BarberDesk (mismo tono que el acento por defecto de
+     los emails, ver DEFAULT_BRAND_COLOR): botones y acciones primarias en
+     las pantallas sin marca de tenant (landing, login, admin). Fijo en
+     claro/oscuro a propósito — es la identidad del producto, no del tema. */
+  --accent: #1e3a5f;
+  --accent-foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    /* Gris carbón en vez de negro puro: el acento navy necesita separarse
+       del fondo para leerse como botón, no como un hueco. */
+    --background: #121417;
     --foreground: #ededed;
   }
 }

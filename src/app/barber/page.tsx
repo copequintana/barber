@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { DateTime } from "luxon";
+import { Ban, Check, Phone, StickyNote } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { getBarberDay, getOwnBarber } from "@/lib/barber-panel";
 import { ACTIVE_TENANT_COOKIE, requireTenantRole } from "@/lib/guards";
@@ -131,7 +132,7 @@ export default async function BarberHomePage({
 
           {data && data.appointments.length === 0 && data.timeOff.length === 0 ? (
             <p className="py-4 text-center text-sm opacity-70">
-              Sin citas este día. 💈
+              Sin citas este día.
             </p>
           ) : null}
 
@@ -141,8 +142,9 @@ export default async function BarberHomePage({
                 key={t.id}
                 className="flex items-center justify-between rounded-lg border border-dashed border-black/20 px-3 py-2 text-sm opacity-80 dark:border-white/25"
               >
-                <span className="tabular-nums">
-                  ⛔ {timeFmt(t.startsAt)}–{timeFmt(t.endsAt)}
+                <span className="flex items-center gap-1.5 tabular-nums">
+                  <Ban className="h-3.5 w-3.5 shrink-0" />
+                  {timeFmt(t.startsAt)}–{timeFmt(t.endsAt)}
                   {t.reason ? ` · ${t.reason}` : ""}
                 </span>
                 <form action={removeTimeOff.bind(null, t.id, dateISO)}>
@@ -172,8 +174,9 @@ export default async function BarberHomePage({
                         {a.service.name} · ${Number(a.priceAtBooking)}
                       </p>
                       {a.customer.notes ? (
-                        <p className="mt-1 text-xs opacity-60">
-                          📝 {a.customer.notes}
+                        <p className="mt-1 flex items-start gap-1 text-xs opacity-60">
+                          <StickyNote className="h-3.5 w-3.5 shrink-0 translate-y-0.5" />
+                          {a.customer.notes}
                         </p>
                       ) : null}
                     </div>
@@ -186,9 +189,9 @@ export default async function BarberHomePage({
                   <div className="flex flex-wrap items-center gap-2 text-sm">
                     <a
                       href={`tel:${a.customer.phone}`}
-                      className="rounded-md border border-black/15 px-3 py-1.5 dark:border-white/20"
+                      className="flex items-center gap-1.5 rounded-md border border-black/15 px-3 py-1.5 dark:border-white/20"
                     >
-                      📞 Llamar
+                      <Phone className="h-3.5 w-3.5" /> Llamar
                     </a>
                     <a
                       href={`https://wa.me/${phoneDigits(a.customer.phone)}`}
@@ -211,9 +214,9 @@ export default async function BarberHomePage({
                         >
                           <button
                             type="submit"
-                            className="rounded-md bg-emerald-600 px-3 py-1.5 font-medium text-white"
+                            className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 font-medium text-white"
                           >
-                            ✓ Listo
+                            <Check className="h-3.5 w-3.5" /> Listo
                           </button>
                         </form>
                         <form
@@ -235,8 +238,8 @@ export default async function BarberHomePage({
           </ul>
 
           <details className="rounded-lg border border-black/10 p-3 dark:border-white/15">
-            <summary className="cursor-pointer text-sm font-medium">
-              ⛔ Bloquear un hueco
+            <summary className="flex cursor-pointer items-center gap-1.5 text-sm font-medium">
+              <Ban className="h-4 w-4" /> Bloquear un hueco
             </summary>
             <form action={blockSlot} className="mt-3 flex flex-col gap-2">
               <input type="hidden" name="date" value={dateISO} />
@@ -270,7 +273,7 @@ export default async function BarberHomePage({
               />
               <button
                 type="submit"
-                className="rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background"
+                className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground"
               >
                 Bloquear
               </button>

@@ -140,7 +140,7 @@ export default async function SettingsPage({
           </p>
         </div>
 
-        <button type="submit" className="self-start rounded-md bg-foreground px-4 py-2 font-medium text-background">
+        <button type="submit" className="self-start rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground">
           Guardar
         </button>
       </form>

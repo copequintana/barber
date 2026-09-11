@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { X } from "lucide-react";
 import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
@@ -124,7 +125,7 @@ export default async function SchedulePage({
                           aria-label="Quitar franja"
                           className="ml-1 opacity-50 hover:opacity-100"
                         >
-                          ✕
+                          <X className="h-3.5 w-3.5" />
                         </button>
                       </form>
                     ))
@@ -216,7 +217,7 @@ export default async function SchedulePage({
           </div>
           <button
             type="submit"
-            className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
           >
             Bloquear
           </button>

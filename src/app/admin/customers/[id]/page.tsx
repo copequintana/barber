@@ -108,7 +108,7 @@ export default async function CustomerPage({
         />
         <button
           type="submit"
-          className="self-start rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
+          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
         >
           Guardar notas
         </button>

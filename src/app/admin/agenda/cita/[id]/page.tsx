@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
+import { Check } from "lucide-react";
 import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
@@ -125,9 +126,9 @@ export default async function CitaDetailPage({
             <form action={setAppointmentOutcome.bind(null, appt.id, "completed")}>
               <button
                 type="submit"
-                className="rounded-md border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-700 dark:border-emerald-900 dark:text-emerald-400"
+                className="flex items-center gap-1.5 rounded-md border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-700 dark:border-emerald-900 dark:text-emerald-400"
               >
-                ✓ Completada
+                <Check className="h-4 w-4" /> Completada
               </button>
             </form>
             <form action={setAppointmentOutcome.bind(null, appt.id, "no_show")}>
@@ -180,7 +181,7 @@ export default async function CitaDetailPage({
             </div>
             <button
               type="submit"
-              className="self-start rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
+              className="self-start rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
             >
               Mover
             </button>

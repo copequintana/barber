@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
+import { Ban } from "lucide-react";
 import { getAgendaData } from "@/lib/admin-appointments";
 import { requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
@@ -111,7 +112,7 @@ export default async function AgendaPage({
         <h1 className="text-2xl font-bold">Agenda</h1>
         <Link
           href={`/admin/agenda/nueva?date=${dayISO}`}
-          className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
         >
           + Nueva cita
         </Link>
@@ -279,14 +280,15 @@ export default async function AgendaPage({
                     {offs.map((t) => (
                       <div
                         key={t.id}
-                        className="absolute inset-x-0.5 z-10 overflow-hidden rounded border border-black/20 bg-black/15 px-1.5 py-0.5 text-xs dark:border-white/25 dark:bg-white/15"
+                        className="absolute inset-x-0.5 z-10 flex items-center gap-1 overflow-hidden rounded border border-black/20 bg-black/15 px-1.5 py-0.5 text-xs dark:border-white/25 dark:bg-white/15"
                         style={{
                           top: top(t.startsAt),
                           height: blockH(t.startsAt, t.endsAt),
                         }}
                         title={t.reason ?? "Bloqueado"}
                       >
-                        ⛔ {t.reason ?? "Bloqueado"}
+                        <Ban className="h-3 w-3 shrink-0" />
+                        {t.reason ?? "Bloqueado"}
                       </div>
                     ))}
                     {/* Citas */}
@@ -326,7 +328,7 @@ export default async function AgendaPage({
         Confirmada <span className="mx-1 inline-block h-2.5 w-2.5 rounded-sm bg-emerald-300 align-middle dark:bg-emerald-800" />
         · Completada <span className="mx-1 inline-block h-2.5 w-2.5 rounded-sm bg-black/20 align-middle dark:bg-white/20" />
         · No asistió <span className="mx-1 inline-block h-2.5 w-2.5 rounded-sm bg-red-300 align-middle dark:bg-red-800" />
-        · ⛔ bloqueo. Las canceladas no se muestran.
+        · <Ban className="mx-1 inline h-3 w-3 align-middle" /> bloqueo. Las canceladas no se muestran.
       </p>
     </div>
   );

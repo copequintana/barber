@@ -73,7 +73,7 @@ ${detailRows(d)}
 </td></tr>`;
   return {
     subject: `Cita confirmada · ${d.tenantName} · ${d.whenText}`,
-    html: layout(accent, "¡Cita confirmada! 💈", body),
+    html: layout(accent, "¡Cita confirmada!", body),
   };
 }
 
@@ -115,7 +115,7 @@ Si no puedes asistir, cancela o reprograma con tiempo. ¡Gracias!
 </td></tr>`;
   return {
     subject: `Recordatorio · ${d.serviceName} · ${d.whenText}`,
-    html: layout(accent, "Recordatorio de tu cita ⏰", body),
+    html: layout(accent, "Recordatorio de tu cita", body),
   };
 }
 
@@ -137,7 +137,7 @@ ${detailRows(d)}
 </td></tr>`;
   return {
     subject: `Cita reprogramada · ${d.tenantName} · ${d.whenText}`,
-    html: layout(accent, "Tu cita cambió de horario 🔁", body),
+    html: layout(accent, "Tu cita cambió de horario", body),
   };
 }
 
@@ -152,6 +152,6 @@ export function staffNewBookingEmail(
 ${detailRows(d)}`;
   return {
     subject: `Nueva reserva · ${d.serviceName} con ${d.barberName} · ${d.whenText}`,
-    html: layout(accent, "Nueva reserva 📅", body),
+    html: layout(accent, "Nueva reserva", body),
   };
 }

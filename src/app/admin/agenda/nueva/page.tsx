@@ -131,7 +131,7 @@ export default async function NuevaCitaPage({
 
         <button
           type="submit"
-          className="self-start rounded-md bg-foreground px-4 py-2 font-medium text-background"
+          className="self-start rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground"
         >
           Crear cita
         </button>

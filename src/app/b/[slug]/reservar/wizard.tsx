@@ -138,7 +138,7 @@ export function BookingWizard(props: Props) {
       ) : null}
       {showConflict ? (
         <div className="flex flex-col gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          <p>Ese horario acaba de ocuparse 😞</p>
+          <p>Ese horario acaba de ocuparse.</p>
           <button
             type="button"
             className="self-start font-medium underline"

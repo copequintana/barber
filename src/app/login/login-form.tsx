@@ -60,7 +60,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-md bg-foreground px-3 py-2 font-medium text-background disabled:opacity-60"
+        className="rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground disabled:opacity-60"
       >
         {submitting ? "Entrando…" : "Entrar"}
       </button>

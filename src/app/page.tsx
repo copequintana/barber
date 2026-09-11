@@ -1,28 +1,29 @@
 import Link from "next/link";
+import { BarChart3, CalendarDays, Clock, Link2, Scissors } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { signupEnabled } from "@/lib/flags";
 
 const primaryBtn =
-  "rounded-md bg-foreground px-6 py-3 font-medium text-background";
+  "rounded-md bg-accent px-6 py-3 font-medium text-accent-foreground";
 
 const FEATURES = [
   {
-    icon: "🔗",
+    icon: Link2,
     title: "Tu página de reservas",
     body: "Un link para Instagram o WhatsApp: tus clientes reservan solos, sin llamarte.",
   },
   {
-    icon: "📅",
+    icon: CalendarDays,
     title: "Agenda multi-barbero",
     body: "Cada barbero ve su día desde el celular; tú ves todo el negocio.",
   },
   {
-    icon: "⏰",
+    icon: Clock,
     title: "Recordatorios automáticos",
     body: "Email horas antes de la cita, sin que tengas que acordarte de avisar.",
   },
   {
-    icon: "📊",
+    icon: BarChart3,
     title: "Reportes al día",
     body: "Ingresos y citas por barbero, exportables a CSV cuando quieras.",
   },
@@ -35,7 +36,7 @@ export default async function HomePage() {
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-16 px-6 py-16">
       <section className="flex flex-col items-center gap-6 text-center">
         <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide opacity-60">
-          <span className="text-lg">💈</span> BarberDesk
+          <Scissors className="h-4 w-4" /> BarberDesk
         </p>
         <h1 className="text-4xl font-bold sm:text-5xl">
           Agenda de barbería, sin llamadas ni WhatsApp perdido
@@ -73,7 +74,7 @@ export default async function HomePage() {
             key={f.title}
             className="flex flex-col gap-1.5 rounded-lg border border-black/10 p-5 dark:border-white/15"
           >
-            <p className="text-2xl">{f.icon}</p>
+            <f.icon className="h-6 w-6 text-accent" />
             <p className="font-semibold">{f.title}</p>
             <p className="text-sm opacity-70">{f.body}</p>
           </div>

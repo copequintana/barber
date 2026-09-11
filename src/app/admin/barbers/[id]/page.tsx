@@ -121,7 +121,7 @@ export default async function BarberEditPage({
         </label>
         <button
           type="submit"
-          className="self-start rounded-md bg-foreground px-4 py-2 font-medium text-background"
+          className="self-start rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground"
         >
           Guardar datos
         </button>
@@ -177,7 +177,7 @@ export default async function BarberEditPage({
         )}
         <button
           type="submit"
-          className="self-start rounded-md bg-foreground px-4 py-2 font-medium text-background"
+          className="self-start rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground"
         >
           Guardar servicios
         </button>
