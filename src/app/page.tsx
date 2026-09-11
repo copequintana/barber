@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BarChart3, CalendarDays, Clock, Link2, Scissors } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getSession } from "@/lib/auth";
 import { signupEnabled } from "@/lib/flags";
 
@@ -33,7 +34,11 @@ export default async function HomePage() {
   const session = await getSession();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-16 px-6 py-16">
+    <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col gap-16 px-6 py-16">
+      <div className="absolute right-6 top-6">
+        <ThemeToggle />
+      </div>
+
       <section className="flex flex-col items-center gap-6 text-center">
         <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide opacity-60">
           <Scissors className="h-4 w-4" /> BarberDesk

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Modo oscuro por clase (.dark en <html>), no solo por preferencia del
+   sistema: next-themes decide la clase (system/light/dark) y con esto todas
+   las utilidades dark: del proyecto siguen esa decisión. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -20,13 +25,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Gris carbón en vez de negro puro: el acento navy necesita separarse
-       del fondo para leerse como botón, no como un hueco. */
-    --background: #121417;
-    --foreground: #ededed;
-  }
+.dark {
+  /* Gris carbón en vez de negro puro: el acento navy necesita separarse
+     del fondo para leerse como botón, no como un hueco. */
+  --background: #121417;
+  --foreground: #ededed;
 }
 
 body {

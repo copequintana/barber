@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { DateTime } from "luxon";
 import { Ban, Check, Phone, StickyNote } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { signOut } from "@/lib/auth";
 import { getBarberDay, getOwnBarber } from "@/lib/barber-panel";
 import { ACTIVE_TENANT_COOKIE, requireTenantRole } from "@/lib/guards";
@@ -80,7 +81,7 @@ export default async function BarberHomePage({
           </h1>
           <p className="text-sm opacity-70">{tenant.name}</p>
         </div>
-        <div className="flex gap-3 text-sm">
+        <div className="flex items-center gap-3 text-sm">
           <Link href="/select-tenant" className="opacity-70 hover:underline">
             Cambiar
           </Link>
@@ -89,6 +90,7 @@ export default async function BarberHomePage({
               Salir
             </button>
           </form>
+          <ThemeToggle />
         </div>
       </header>
 

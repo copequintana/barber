@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { signOut } from "@/lib/auth";
 import { ACTIVE_TENANT_COOKIE, requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
@@ -65,6 +66,7 @@ export default async function AdminLayout({
                 Salir
               </button>
             </form>
+            <ThemeToggle />
           </div>
         </div>
       </header>
