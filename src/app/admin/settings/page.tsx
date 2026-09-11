@@ -1,3 +1,4 @@
+import { ImageUploadField } from "@/components/image-upload-field";
 import { requireTenantRole } from "@/lib/guards";
 import { DEFAULT_BRAND_COLOR, getTenantById } from "@/lib/tenancy";
 import { updateProfile } from "./actions";
@@ -37,61 +38,33 @@ export default async function SettingsPage({
         </p>
       ) : null}
 
+      <div>
+        <h2 className="text-lg font-semibold">Marca</h2>
+        <p className="text-sm opacity-70">
+          Se usan en tu página de reservas y en los correos a tus clientes. Se
+          guardan al subirlas, sin necesidad de tocar &quot;Guardar&quot;.
+        </p>
+      </div>
+
+      <ImageUploadField
+        field="logoUrl"
+        label="Logo"
+        tenantId={ctx.tenantId}
+        currentUrl={tenant.logoUrl}
+        previewClassName="h-16 w-16 rounded-full border border-black/10 object-cover dark:border-white/15"
+        help="Imagen cuadrada. PNG, JPG o WEBP, máx. 10 MB."
+      />
+
+      <ImageUploadField
+        field="coverImageUrl"
+        label="Portada"
+        tenantId={ctx.tenantId}
+        currentUrl={tenant.coverImageUrl}
+        previewClassName="h-16 w-28 rounded-md border border-black/10 object-cover dark:border-white/15"
+        help="Imagen ancha del local o del equipo, arriba de tu página de reservas."
+      />
+
       <form action={updateProfile} className="flex flex-col gap-5">
-        <div>
-          <h2 className="text-lg font-semibold">Marca</h2>
-          <p className="text-sm opacity-70">
-            Se usan en tu página de reservas y en los correos a tus clientes.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" htmlFor="logoUrl">
-            URL del logo
-          </label>
-          <input
-            id="logoUrl"
-            name="logoUrl"
-            type="url"
-            placeholder="https://…/logo.png"
-            defaultValue={tenant.logoUrl ?? ""}
-            className={inputClass}
-          />
-          <p className="text-xs opacity-60">
-            Link directo al archivo de imagen (termina en .png o .jpg), no a
-            una página que la muestre. Más fácil:{" "}
-            <a
-              href="https://imgur.com/upload"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              sube la imagen a imgur.com
-            </a>{" "}
-            (sin necesidad de cuenta) y copia el link directo. Los links de
-            &quot;Compartir&quot; de Google Drive no funcionan aquí: apuntan a
-            la vista previa, no al archivo.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" htmlFor="coverImageUrl">
-            URL de la portada
-          </label>
-          <input
-            id="coverImageUrl"
-            name="coverImageUrl"
-            type="url"
-            placeholder="https://…/portada.jpg"
-            defaultValue={tenant.coverImageUrl ?? ""}
-            className={inputClass}
-          />
-          <p className="text-xs opacity-60">
-            Imagen ancha (horizontal) del local o del equipo, arriba de tu
-            página de reservas. Mismo tipo de link que el logo. Opcional.
-          </p>
-        </div>
-
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium" htmlFor="brandColor">
             Color de marca
