@@ -79,7 +79,7 @@ export function OnboardingForm() {
             id="timezone"
             name="timezone"
             required
-            defaultValue="America/Mexico_City"
+            defaultValue="America/Hermosillo"
             className={inputClass}
           >
             {TIMEZONES.map((tz) => (

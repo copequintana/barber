@@ -2,6 +2,7 @@
 export const TIMEZONES = [
   "America/Mexico_City",
   "America/Monterrey",
+  "America/Hermosillo",
   "America/Tijuana",
   "America/Cancun",
   "America/Bogota",
