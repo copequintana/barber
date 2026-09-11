@@ -58,9 +58,19 @@ export default async function SettingsPage({
             className={inputClass}
           />
           <p className="text-xs opacity-60">
-            Link público a una imagen cuadrada. Súbela a donde prefieras
-            (Google Drive, Imgur, tu sitio) y pega aquí el link directo al
-            archivo.
+            Link directo al archivo de imagen (termina en .png o .jpg), no a
+            una página que la muestre. Más fácil:{" "}
+            <a
+              href="https://imgur.com/upload"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              sube la imagen a imgur.com
+            </a>{" "}
+            (sin necesidad de cuenta) y copia el link directo. Los links de
+            &quot;Compartir&quot; de Google Drive no funcionan aquí: apuntan a
+            la vista previa, no al archivo.
           </p>
         </div>
 
@@ -78,7 +88,7 @@ export default async function SettingsPage({
           />
           <p className="text-xs opacity-60">
             Imagen ancha (horizontal) del local o del equipo, arriba de tu
-            página de reservas. Opcional.
+            página de reservas. Mismo tipo de link que el logo. Opcional.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FallbackImage } from "@/components/fallback-image";
 import { getPublicCatalog } from "@/lib/catalog";
 import { getTenantBySlug } from "@/lib/tenancy";
 
@@ -44,10 +45,7 @@ export default async function TenantPublicPage({ params }: Props) {
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col pb-10">
       {tenant.coverImageUrl ? (
-        // URL arbitraria elegida por el dueño: no se puede preconfigurar en
-        // next.config.ts remotePatterns, así que va sin next/image.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <FallbackImage
           src={tenant.coverImageUrl}
           alt=""
           className="h-40 w-full object-cover sm:h-52"
@@ -57,8 +55,7 @@ export default async function TenantPublicPage({ params }: Props) {
       <div className="flex flex-col gap-8 px-6 pt-10">
         <header className="flex items-center gap-4">
           {tenant.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <FallbackImage
               src={tenant.logoUrl}
               alt=""
               className="h-14 w-14 shrink-0 rounded-full border border-black/10 object-cover dark:border-white/15"
