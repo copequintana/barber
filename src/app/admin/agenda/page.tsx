@@ -5,6 +5,7 @@ import { getAgendaData } from "@/lib/admin-appointments";
 import { requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
 import { WEEKDAYS_ES, minutesToHhmm } from "@/lib/time";
+import { BarberJumpSelect, DateJumpInput } from "./nav-controls";
 
 export const metadata = { title: "Agenda · BarberDesk" };
 
@@ -130,21 +131,11 @@ export default async function AgendaPage({
             →
           </Link>
         </div>
-        <form method="get" action="/admin/agenda" className="flex items-center gap-2">
-          <input type="hidden" name="view" value={view} />
-          {view === "week" && weekBarber ? (
-            <input type="hidden" name="barber" value={weekBarber.id} />
-          ) : null}
-          <input
-            type="date"
-            name="date"
-            defaultValue={dayISO}
-            className="rounded-md border border-black/15 bg-transparent px-2 py-1.5 dark:border-white/20"
-          />
-          <button type="submit" className="underline opacity-70">
-            Ir
-          </button>
-        </form>
+        <DateJumpInput
+          defaultValue={dayISO}
+          view={view}
+          barberId={view === "week" ? weekBarber?.id : undefined}
+        />
         <span className="font-medium capitalize">
           {view === "day"
             ? date.setLocale("es").toFormat("cccc d 'de' LLLL")
@@ -164,24 +155,11 @@ export default async function AgendaPage({
             Semana
           </Link>
           {view === "week" ? (
-            <form method="get" action="/admin/agenda">
-              <input type="hidden" name="view" value="week" />
-              <input type="hidden" name="date" value={dayISO} />
-              <select
-                name="barber"
-                defaultValue={weekBarber?.id}
-                className="rounded-md border border-black/15 bg-transparent px-2 py-1.5 dark:border-white/20"
-              >
-                {data.barbers.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.displayName}
-                  </option>
-                ))}
-              </select>{" "}
-              <button type="submit" className="underline opacity-70">
-                Ver
-              </button>
-            </form>
+            <BarberJumpSelect
+              barbers={data.barbers}
+              defaultValue={weekBarber?.id}
+              dateISO={dayISO}
+            />
           ) : null}
         </div>
       </div>
