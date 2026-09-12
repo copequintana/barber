@@ -34,7 +34,8 @@ export type NotifyResult =
   | { sent: true }
   | { sent: false; reason: "duplicate" | "no_recipient" | "not_found" | "failed" };
 
-function appBaseUrl(): string {
+/** URL pública base de la app (también usada por el código QR de cada tenant). */
+export function appBaseUrl(): string {
   return process.env.APP_URL ?? "http://localhost:3000";
 }
 

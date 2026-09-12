@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { requireTenantRole } from "@/lib/guards";
+import { appBaseUrl } from "@/lib/notifications";
 import { DEFAULT_BRAND_COLOR, getTenantById } from "@/lib/tenancy";
 import { setTenantImage, updateProfile } from "./actions";
 
@@ -17,6 +19,7 @@ export default async function SettingsPage({
   const { error, ok } = await searchParams;
   const tenant = await getTenantById(ctx.tenantId);
   if (!tenant) return null;
+  const publicUrl = `${appBaseUrl()}/b/${tenant.slug}`;
 
   return (
     <div className="flex max-w-2xl flex-col gap-8">
@@ -37,6 +40,29 @@ export default async function SettingsPage({
           Cambios guardados.
         </p>
       ) : null}
+
+      <section className="flex flex-col gap-2 rounded-lg border border-black/10 p-4 dark:border-white/15">
+        <h2 className="text-lg font-semibold">Comparte tu barbería</h2>
+        <a
+          href={publicUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all text-sm underline opacity-80"
+        >
+          {publicUrl}
+        </a>
+        <Link
+          href={`/b/${tenant.slug}/qr`}
+          target="_blank"
+          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
+        >
+          Ver código QR
+        </Link>
+        <p className="text-xs opacity-60">
+          Muéstralo en una pantalla del local o imprímelo — la página del QR
+          tiene su propio botón de imprimir y no pide iniciar sesión.
+        </p>
+      </section>
 
       <div>
         <h2 className="text-lg font-semibold">Marca</h2>
