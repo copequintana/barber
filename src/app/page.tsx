@@ -1,94 +1,54 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BarChart3, CalendarDays, Clock, Link2 } from "lucide-react";
+import { BarberPole } from "@/components/barber-pole";
+import { DirectoryList } from "@/components/directory-list";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getSession } from "@/lib/auth";
-import { signupEnabled } from "@/lib/flags";
 
-const primaryBtn =
-  "rounded-md bg-accent px-6 py-3 font-medium text-accent-foreground";
+export const metadata = {
+  title: "Encuentra tu barbería · BarberDesk",
+  description: "Busca y reserva en una barbería cerca de ti.",
+};
 
-const FEATURES = [
-  {
-    icon: Link2,
-    title: "Tu página de reservas",
-    body: "Un link para Instagram o WhatsApp: tus clientes reservan solos, sin llamarte.",
-  },
-  {
-    icon: CalendarDays,
-    title: "Agenda multi-barbero",
-    body: "Cada barbero ve su día desde el celular; tú ves todo el negocio.",
-  },
-  {
-    icon: Clock,
-    title: "Recordatorios automáticos",
-    body: "Email horas antes de la cita, sin que tengas que acordarte de avisar.",
-  },
-  {
-    icon: BarChart3,
-    title: "Reportes al día",
-    body: "Ingresos y citas por barbero, exportables a CSV cuando quieras.",
-  },
-];
-
+/**
+ * Landing pública: para el cliente que busca dónde cortarse el pelo, no
+ * para el dueño de barbería (esa pitch vive aparte, en /socios, compartida
+ * en privado con prospectos — no enlazada desde aquí a propósito).
+ */
 export default async function HomePage() {
   const session = await getSession();
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col gap-16 px-6 py-16">
+    <main className="relative mx-auto flex min-h-screen max-w-lg flex-col gap-8 px-6 py-10">
       <div className="absolute right-6 top-6">
         <ThemeToggle />
       </div>
 
-      <section className="flex flex-col items-center gap-6 text-center">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <BarberPole className="h-20 w-7" />
         <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide opacity-60">
           <Image src="/logo-mark.png" alt="" width={20} height={20} /> BarberDesk
         </p>
-        <h1 className="text-4xl font-bold sm:text-5xl">
-          Agenda de barbería, sin llamadas ni WhatsApp perdido
-        </h1>
-        <p className="max-w-xl text-lg opacity-70">
-          Una página de reservas propia, agenda multi-barbero y recordatorios
-          automáticos — para que tus clientes reserven solos y no se te
-          olvide avisarles.
+        <h1 className="text-3xl font-bold sm:text-4xl">Barberías cerca de ti</h1>
+        <p className="text-sm opacity-70">
+          Si tu navegador te pide tu ubicación, acéptala para ordenar por
+          cercanía.
         </p>
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
-          {session?.user ? (
-            <Link href="/select-tenant" className={primaryBtn}>
-              Ir a mis barberías
-            </Link>
-          ) : signupEnabled ? (
-            <>
-              <Link href="/signup" className={primaryBtn}>
-                Crea tu barbería gratis
-              </Link>
-              <Link href="/login" className="text-sm underline opacity-70">
-                Ya tengo cuenta
-              </Link>
-            </>
-          ) : (
-            <Link href="/login" className={primaryBtn}>
-              Entrar
-            </Link>
-          )}
-        </div>
-        <Link href="/directorio" className="text-sm underline opacity-60">
-          ¿Buscas una barbería? Ve el directorio
-        </Link>
-      </section>
+      </div>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="flex flex-col gap-1.5 rounded-lg border border-black/10 p-5 dark:border-white/15"
-          >
-            <f.icon className="h-6 w-6 text-accent" />
-            <p className="font-semibold">{f.title}</p>
-            <p className="text-sm opacity-70">{f.body}</p>
-          </div>
-        ))}
-      </section>
+      <DirectoryList />
+
+      <div className="mt-4 border-t border-black/10 pt-4 text-sm dark:border-white/15">
+        {session?.user ? (
+          <Link href="/select-tenant" className="underline opacity-70">
+            Ir a mis barberías →
+          </Link>
+        ) : (
+          <Link href="/login" className="underline opacity-50">
+            ¿Tienes una cuenta de barbería? Entra
+          </Link>
+        )}
+      </div>
     </main>
   );
 }

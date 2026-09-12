@@ -18,6 +18,17 @@ type LoadState =
   | { status: "ok"; results: Result[]; sorted: boolean }
   | { status: "error"; message: string };
 
+function InitialAvatar({ name, color }: { name: string; color: string | null }) {
+  return (
+    <span
+      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full text-2xl font-semibold text-white"
+      style={{ backgroundColor: color ?? "var(--accent)" }}
+    >
+      {name.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
 async function fetchNearby(coords?: GeolocationCoordinates): Promise<LoadState> {
   const params = coords
     ? new URLSearchParams({ lat: String(coords.latitude), lng: String(coords.longitude) })
@@ -68,32 +79,29 @@ export function DirectoryList() {
           No pudimos usar tu ubicación, así que están en orden alfabético.
         </p>
       ) : null}
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-3">
         {state.results.map((t) => (
           <li key={t.slug}>
             <Link
               href={`/b/${t.slug}`}
-              className="flex items-center gap-3 rounded-lg border border-black/10 p-3 hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/10"
+              className="flex items-center gap-4 rounded-xl border border-black/10 bg-black/[0.02] p-4 transition-colors hover:bg-black/5 dark:border-white/15 dark:bg-white/[0.03] dark:hover:bg-white/10"
+              style={{ borderLeft: `4px solid ${t.brandColor ?? "var(--accent)"}` }}
             >
               {t.logoUrl ? (
                 <FallbackImage
                   src={t.logoUrl}
                   alt=""
-                  className="h-12 w-12 shrink-0 rounded-full border border-black/10 object-cover dark:border-white/15"
+                  className="h-20 w-20 shrink-0 rounded-full border border-black/10 object-cover dark:border-white/15"
+                  fallback={<InitialAvatar name={t.name} color={t.brandColor} />}
                 />
               ) : (
-                <span
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-                  style={{ backgroundColor: t.brandColor ?? "var(--accent)" }}
-                >
-                  {t.name.charAt(0).toUpperCase()}
-                </span>
+                <InitialAvatar name={t.name} color={t.brandColor} />
               )}
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{t.name}</span>
+                  <span className="text-lg font-semibold">{t.name}</span>
                   {t.distanceKm != null ? (
-                    <span className="shrink-0 text-sm tabular-nums opacity-70">
+                    <span className="shrink-0 text-sm font-medium tabular-nums opacity-70">
                       {t.distanceKm < 1
                         ? `${Math.round(t.distanceKm * 1000)} m`
                         : `${t.distanceKm.toFixed(1)} km`}
