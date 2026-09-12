@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { FallbackImage } from "@/components/fallback-image";
 import type { BookingCatalog } from "@/lib/catalog";
 import { bookAction, type BookState } from "./actions";
 
@@ -214,9 +215,29 @@ export function BookingWizard(props: Props) {
                 void fetchSlots(service.id, b.id, dateISO);
               }}
             >
-              <span className="flex items-center justify-between">
-                <span className="font-medium">{b.name}</span>
-                <span className="tabular-nums">{money.format(b.price)}</span>
+              <span className="flex items-center gap-3">
+                {b.photoUrl ? (
+                  <FallbackImage
+                    src={b.photoUrl}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-full border border-black/10 object-cover dark:border-white/15"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/5 text-sm font-semibold opacity-60 dark:bg-white/10">
+                    {b.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between">
+                    <span className="font-medium">{b.name}</span>
+                    <span className="tabular-nums">{money.format(b.price)}</span>
+                  </span>
+                  {b.bio ? (
+                    <span className="block truncate text-sm opacity-70">
+                      {b.bio}
+                    </span>
+                  ) : null}
+                </span>
               </span>
             </button>
           ))}

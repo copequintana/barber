@@ -11,7 +11,13 @@ export type BookingCatalog = {
     id: string;
     name: string;
     durationMin: number;
-    barbers: { id: string; name: string; price: number }[];
+    barbers: {
+      id: string;
+      name: string;
+      price: number;
+      bio: string | null;
+      photoUrl: string | null;
+    }[];
   }[];
 };
 
@@ -41,6 +47,8 @@ export async function getBookingCatalog(
           id: bs.barberId,
           name: bs.barber.displayName,
           price: Number(bs.priceOverride ?? s.price),
+          bio: bs.barber.bio,
+          photoUrl: bs.barber.photoUrl,
         })),
       })),
     };
