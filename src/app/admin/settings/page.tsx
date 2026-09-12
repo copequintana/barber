@@ -1,7 +1,7 @@
 import { ImageUploadField } from "@/components/image-upload-field";
 import { requireTenantRole } from "@/lib/guards";
 import { DEFAULT_BRAND_COLOR, getTenantById } from "@/lib/tenancy";
-import { updateProfile } from "./actions";
+import { setTenantImage, updateProfile } from "./actions";
 
 export const metadata = { title: "Configuración · BarberDesk" };
 
@@ -47,21 +47,21 @@ export default async function SettingsPage({
       </div>
 
       <ImageUploadField
-        field="logoUrl"
         label="Logo"
         tenantId={ctx.tenantId}
         currentUrl={tenant.logoUrl}
         previewClassName="h-16 w-16 rounded-full border border-black/10 object-cover dark:border-white/15"
         help="Imagen cuadrada. PNG, JPG o WEBP, máx. 10 MB."
+        onUpload={setTenantImage.bind(null, "logoUrl")}
       />
 
       <ImageUploadField
-        field="coverImageUrl"
         label="Portada"
         tenantId={ctx.tenantId}
         currentUrl={tenant.coverImageUrl}
         previewClassName="h-16 w-28 rounded-md border border-black/10 object-cover dark:border-white/15"
         help="Imagen ancha del local o del equipo, arriba de tu página de reservas."
+        onUpload={setTenantImage.bind(null, "coverImageUrl")}
       />
 
       <form action={updateProfile} className="flex flex-col gap-5">

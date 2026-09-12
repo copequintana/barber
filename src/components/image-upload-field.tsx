@@ -3,13 +3,10 @@
 import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
-import { setTenantImage } from "@/app/admin/settings/actions";
 import { FallbackImage } from "./fallback-image";
 
 const ACCEPT = "image/png,image/jpeg,image/webp";
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
-
-type Field = "logoUrl" | "coverImageUrl";
 
 /** El SDK de Blob tira un mensaje técnico en inglés cuando no hay store
  * conectado (BLOB_READ_WRITE_TOKEN ausente); se traduce ese caso puntual. */
@@ -23,24 +20,26 @@ function friendlyError(err: unknown, fallback: string): string {
 
 /**
  * Selector de archivo que sube directo del navegador a Vercel Blob (no pasa
- * por nuestro servidor) y guarda la URL resultante en el tenant. Requiere
- * que el proyecto tenga un store de Blob conectado en Vercel — sin eso,
- * /api/upload falla con un error claro en vez de romper la página.
+ * por nuestro servidor) y persiste la URL resultante llamando a `onUpload`
+ * — una server action (o un .bind() sobre una) que decide dónde guardarla:
+ * el logo/portada del tenant, la foto de un barbero, etc. Requiere que el
+ * proyecto tenga un store de Blob conectado en Vercel — sin eso, /api/upload
+ * falla con un error claro en vez de romper la página.
  */
 export function ImageUploadField({
-  field,
   label,
   tenantId,
   currentUrl,
   previewClassName,
   help,
+  onUpload,
 }: {
-  field: Field;
   label: string;
   tenantId: string;
   currentUrl: string | null;
   previewClassName: string;
   help?: string;
+  onUpload: (url: string | null) => Promise<void>;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -64,7 +63,7 @@ export function ImageUploadField({
         handleUploadUrl: "/api/upload",
         clientPayload: JSON.stringify({ tenantId }),
       });
-      await setTenantImage(field, blob.url);
+      await onUpload(blob.url);
       router.refresh();
     } catch (err) {
       setError(friendlyError(err, "No se pudo subir la imagen"));
@@ -77,7 +76,7 @@ export function ImageUploadField({
     setError(null);
     setBusy(true);
     try {
-      await setTenantImage(field, null);
+      await onUpload(null);
       router.refresh();
     } catch (err) {
       setError(friendlyError(err, "No se pudo quitar la imagen"));

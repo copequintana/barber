@@ -99,13 +99,29 @@ export default async function TenantPublicPage({ params }: Props) {
 
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold">Barberos</h2>
-          <ul className="flex flex-wrap gap-2">
+          <ul className="flex flex-col gap-2">
             {barbers.map((b) => (
               <li
                 key={b.id}
-                className="rounded-full border border-black/10 px-4 py-1.5 text-sm dark:border-white/15"
+                className="flex items-center gap-3 rounded-lg border border-black/10 p-3 dark:border-white/15"
               >
-                {b.displayName}
+                {b.photoUrl ? (
+                  <FallbackImage
+                    src={b.photoUrl}
+                    alt=""
+                    className="h-14 w-14 shrink-0 rounded-full border border-black/10 object-cover dark:border-white/15"
+                  />
+                ) : (
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-black/5 text-lg font-semibold opacity-60 dark:bg-white/10">
+                    {b.displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex flex-col gap-0.5">
+                  <p className="font-medium">{b.displayName}</p>
+                  {b.bio ? (
+                    <p className="line-clamp-2 text-sm opacity-70">{b.bio}</p>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>

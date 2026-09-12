@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { del } from "@vercel/blob";
 import { z } from "zod";
 import { prisma, withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
@@ -29,7 +30,6 @@ export async function createBarber(formData: FormData) {
 const updateSchema = z.object({
   displayName: nameSchema,
   bio: z.string().trim().max(500).optional(),
-  photoUrl: z.union([z.literal(""), z.string().trim().url("URL de foto inválida")]),
   active: z.boolean(),
 });
 
@@ -40,7 +40,6 @@ export async function updateBarber(barberId: string, formData: FormData) {
   const parsed = updateSchema.safeParse({
     displayName: formData.get("displayName"),
     bio: formData.get("bio") ?? undefined,
-    photoUrl: formData.get("photoUrl") ?? "",
     active: formData.get("active") === "on",
   });
   if (!parsed.success) fail(path, parsed.error.issues[0].message);
@@ -51,7 +50,6 @@ export async function updateBarber(barberId: string, formData: FormData) {
       data: {
         displayName: parsed.data.displayName,
         bio: parsed.data.bio || null,
-        photoUrl: parsed.data.photoUrl || null,
         active: parsed.data.active,
       },
     }),
@@ -61,6 +59,33 @@ export async function updateBarber(barberId: string, formData: FormData) {
   revalidatePath("/admin/barbers");
   revalidatePath(path);
   redirect(`${path}?ok=1`);
+}
+
+/**
+ * Foto del barbero: se sube a Vercel Blob desde el cliente (ver
+ * ImageUploadField) y esta acción solo persiste la URL resultante — llamada
+ * directa desde un componente cliente vía .bind(), no desde un <form>. Si la
+ * foto anterior era nuestra (no un link externo), se borra del storage.
+ */
+export async function setBarberImage(barberId: string, url: string | null) {
+  const ctx = await requireTenantRole("owner", "admin");
+  const path = `/admin/barbers/${barberId}`;
+
+  const previous = await withTenant(ctx.tenantId, (tx) =>
+    tx.barber.findUnique({ where: { id: barberId }, select: { photoUrl: true } }),
+  );
+
+  const updated = await withTenant(ctx.tenantId, (tx) =>
+    tx.barber.updateMany({ where: { id: barberId }, data: { photoUrl: url } }),
+  );
+  if (updated.count === 0) fail("/admin/barbers", "Barbero no encontrado");
+
+  const previousUrl = previous?.photoUrl;
+  if (previousUrl && previousUrl !== url && previousUrl.includes(".public.blob.vercel-storage.com")) {
+    await del(previousUrl).catch(() => {}); // best-effort: no bloquea el guardado
+  }
+
+  revalidatePath(path);
 }
 
 /**

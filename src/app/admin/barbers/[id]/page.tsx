@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
 import {
   linkBarberUser,
+  setBarberImage,
   setBarberServices,
   unlinkBarberUser,
   updateBarber,
@@ -76,6 +78,15 @@ export default async function BarberEditPage({
         </p>
       ) : null}
 
+      <ImageUploadField
+        label="Foto"
+        tenantId={ctx.tenantId}
+        currentUrl={barber.photoUrl}
+        previewClassName="h-16 w-16 rounded-full border border-black/10 object-cover dark:border-white/15"
+        help="PNG, JPG o WEBP, máx. 10 MB. Se guarda al subirla."
+        onUpload={setBarberImage.bind(null, barber.id)}
+      />
+
       <form action={updateAction} className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Datos</h2>
         <div className="flex flex-col gap-1">
@@ -100,18 +111,6 @@ export default async function BarberEditPage({
             rows={2}
             maxLength={500}
             defaultValue={barber.bio ?? ""}
-            className={inputClass}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" htmlFor="photoUrl">
-            URL de foto (la subida de archivos llega más adelante)
-          </label>
-          <input
-            id="photoUrl"
-            name="photoUrl"
-            type="url"
-            defaultValue={barber.photoUrl ?? ""}
             className={inputClass}
           />
         </div>
