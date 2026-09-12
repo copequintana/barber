@@ -52,6 +52,10 @@ model Tenant {
   // Contacto público (T-UX01): se muestran en /b/[slug] si están definidos
   phone          String?
   address        String?
+  // Ubicación (T-UX02): el dueño marca el pin en el mapa (Configuración).
+  // Con ambos definidos, la barbería aparece en /directorio.
+  lat            Float?
+  lng            Float?
 
   // Reglas de reserva del negocio
   slotGridMinutes Int @default(15) @map("slot_grid_minutes")

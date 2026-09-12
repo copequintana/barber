@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { LocationPickerLoader } from "@/components/location-picker-loader";
 import { requireTenantRole } from "@/lib/guards";
 import { appBaseUrl } from "@/lib/notifications";
 import { DEFAULT_BRAND_COLOR, getTenantById } from "@/lib/tenancy";
-import { setTenantImage, updateProfile } from "./actions";
+import { setTenantImage, setTenantLocation, updateProfile } from "./actions";
 
 export const metadata = { title: "Configuración · BarberDesk" };
 
@@ -153,6 +154,24 @@ export default async function SettingsPage({
           Guardar
         </button>
       </form>
+
+      <div className="mt-2">
+        <h2 className="text-lg font-semibold">Ubicación</h2>
+        <p className="text-sm opacity-70">
+          Con esto guardado, tu barbería aparece en{" "}
+          <Link href="/directorio" className="underline">
+            /directorio
+          </Link>{" "}
+          para clientes que buscan una barbería cerca. Mapa gratuito
+          (OpenStreetMap) — ningún servicio de pago involucrado.
+        </p>
+      </div>
+
+      <LocationPickerLoader
+        initialLat={tenant.lat}
+        initialLng={tenant.lng}
+        onSave={setTenantLocation}
+      />
     </div>
   );
 }

@@ -72,6 +72,9 @@ export default async function HomePage() {
             </Link>
           )}
         </div>
+        <Link href="/directorio" className="text-sm underline opacity-60">
+          ¿Buscas una barbería? Ve el directorio
+        </Link>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">

@@ -15,6 +15,7 @@ function revalidateTenantPublicPaths(slug: string) {
   revalidatePath("/admin/settings");
   revalidatePath(`/b/${slug}`);
   revalidatePath(`/b/${slug}/reservar`);
+  revalidatePath("/directorio");
 }
 
 // El input type="color" del form siempre manda un hex de 6 dígitos; el
@@ -83,6 +84,27 @@ export async function setTenantImage(
   if (previousUrl && previousUrl !== url && previousUrl.includes(".public.blob.vercel-storage.com")) {
     await del(previousUrl).catch(() => {}); // best-effort: no bloquea el guardado
   }
+
+  revalidateTenantPublicPaths(tenant.slug);
+}
+
+const coordsSchema = z.object({
+  lat: z.number().gte(-90).lte(90),
+  lng: z.number().gte(-180).lte(180),
+});
+
+/** Ubicación (pin del mapa en Configuración) — aparece en /directorio en
+ * cuanto se guarda. */
+export async function setTenantLocation(lat: number, lng: number) {
+  const ctx = await requireTenantRole("owner", "admin");
+  const parsed = coordsSchema.safeParse({ lat, lng });
+  if (!parsed.success) throw new Error("Coordenadas inválidas");
+
+  const tenant = await prisma.tenant.update({
+    where: { id: ctx.tenantId },
+    data: { lat: parsed.data.lat, lng: parsed.data.lng },
+    select: { slug: true },
+  });
 
   revalidateTenantPublicPaths(tenant.slug);
 }
