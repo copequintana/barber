@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
+import { DateTimeInput } from "@/components/date-time-input";
 import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
@@ -94,7 +95,7 @@ export default async function NuevaCitaPage({
           <label className="text-sm font-medium" htmlFor="startLocal">
             Fecha y hora (local de la barbería)
           </label>
-          <input
+          <DateTimeInput
             id="startLocal"
             name="startLocal"
             type="datetime-local"

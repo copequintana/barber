@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { DateTime } from "luxon";
 import { Ban, Check, Phone, StickyNote } from "lucide-react";
+import { DateTimeInput } from "@/components/date-time-input";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { signOut } from "@/lib/auth";
 import { getBarberDay, getOwnBarber } from "@/lib/barber-panel";
@@ -248,7 +249,7 @@ export default async function BarberHomePage({
               <label className="text-xs font-medium" htmlFor="startLocal">
                 Desde
               </label>
-              <input
+              <DateTimeInput
                 id="startLocal"
                 name="startLocal"
                 type="datetime-local"

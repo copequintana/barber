@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
 import { Check } from "lucide-react";
+import { DateTimeInput } from "@/components/date-time-input";
 import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
@@ -151,7 +152,7 @@ export default async function CitaDetailPage({
                 <label className="text-sm font-medium" htmlFor="startLocal">
                   Nueva fecha y hora
                 </label>
-                <input
+                <DateTimeInput
                   id="startLocal"
                   name="startLocal"
                   type="datetime-local"

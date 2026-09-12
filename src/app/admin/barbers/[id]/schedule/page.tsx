@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { X } from "lucide-react";
+import { DateTimeInput } from "@/components/date-time-input";
 import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
@@ -136,9 +137,9 @@ export default async function SchedulePage({
                   className="ml-auto flex items-center gap-1.5"
                 >
                   <input type="hidden" name="weekday" value={day} />
-                  <input name="start" type="time" required className={inputClass} />
+                  <DateTimeInput name="start" type="time" required className={inputClass} />
                   <span className="opacity-50">–</span>
-                  <input name="end" type="time" required className={inputClass} />
+                  <DateTimeInput name="end" type="time" required className={inputClass} />
                   <button
                     type="submit"
                     className="rounded-md border border-black/15 px-2.5 py-1.5 text-sm font-medium dark:border-white/20"
@@ -189,7 +190,7 @@ export default async function SchedulePage({
             <label className="text-sm font-medium" htmlFor="startsAt">
               Desde
             </label>
-            <input
+            <DateTimeInput
               id="startsAt"
               name="startsAt"
               type="datetime-local"
@@ -201,7 +202,7 @@ export default async function SchedulePage({
             <label className="text-sm font-medium" htmlFor="endsAt">
               Hasta
             </label>
-            <input
+            <DateTimeInput
               id="endsAt"
               name="endsAt"
               type="datetime-local"

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
+import { DateTimeInput } from "@/components/date-time-input";
 import { requireTenantRole } from "@/lib/guards";
 import { getReport } from "@/lib/reports";
 import { getTenantById } from "@/lib/tenancy";
@@ -116,14 +117,14 @@ export default async function ReportsPage({
         )}
         {quick("Últimos 30 días", today.minus({ days: 29 }), today)}
         <form method="get" action="/admin/reports" className="flex items-center gap-2">
-          <input
+          <DateTimeInput
             type="date"
             name="from"
             defaultValue={fromISO}
             className="rounded-md border border-black/15 bg-transparent px-2 py-1 dark:border-white/20"
           />
           <span className="opacity-60">→</span>
-          <input
+          <DateTimeInput
             type="date"
             name="to"
             defaultValue={toISO}
