@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BarberPole } from "@/components/barber-pole";
 import { DirectoryList } from "@/components/directory-list";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getSession } from "@/lib/auth";
@@ -25,9 +24,16 @@ export default async function HomePage() {
       </div>
 
       <div className="flex flex-col items-center gap-3 text-center">
-        <BarberPole className="h-20 w-7" />
-        <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide opacity-60">
-          <Image src="/logo-mark.png" alt="" width={20} height={20} /> BarberDesk
+        <Image
+          src="/logo-mark-hero.png"
+          alt="BarberDesk"
+          width={125}
+          height={88}
+          priority
+          className="rounded-xl shadow-md"
+        />
+        <p className="text-sm font-semibold uppercase tracking-wide opacity-60">
+          BarberDesk
         </p>
         <h1 className="text-3xl font-bold sm:text-4xl">Barberías cerca de ti</h1>
         <p className="text-sm opacity-70">
