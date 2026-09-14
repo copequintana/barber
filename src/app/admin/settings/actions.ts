@@ -41,6 +41,11 @@ export async function updateProfile(formData: FormData) {
   if (!parsed.success) fail(path, parsed.error.issues[0].message);
   const data = parsed.data;
 
+  // Checkboxes: el navegador solo manda el campo si está marcado ("on").
+  const reminder24hEnabled = formData.get("reminder24hEnabled") === "on";
+  const reminder2hEnabled = formData.get("reminder2hEnabled") === "on";
+  const whatsappEnabled = formData.get("whatsappEnabled") === "on";
+
   // Tenant es tabla global (sin RLS): se actualiza directo, acotado al
   // tenantId que ya validó requireTenantRole.
   const tenant = await prisma.tenant.update({
@@ -49,6 +54,9 @@ export async function updateProfile(formData: FormData) {
       brandColor: data.brandColor,
       phone: data.phone || null,
       address: data.address || null,
+      reminder24hEnabled,
+      reminder2hEnabled,
+      whatsappEnabled,
     },
     select: { slug: true },
   });

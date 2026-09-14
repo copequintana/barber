@@ -5,6 +5,7 @@ import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
 import {
   linkBarberUser,
+  resendBarberInvite,
   setBarberImage,
   setBarberServices,
   unlinkBarberUser,
@@ -49,6 +50,7 @@ export default async function BarberEditPage({
   const servicesAction = setBarberServices.bind(null, barber.id);
   const linkAction = linkBarberUser.bind(null, barber.id);
   const unlinkAction = unlinkBarberUser.bind(null, barber.id);
+  const resendAction = resendBarberInvite.bind(null, barber.id);
 
   return (
     <div className="flex max-w-2xl flex-col gap-8">
@@ -72,7 +74,11 @@ export default async function BarberEditPage({
           {error}
         </p>
       ) : null}
-      {ok ? (
+      {ok === "invite" ? (
+        <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+          Invitación reenviada.
+        </p>
+      ) : ok ? (
         <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
           Cambios guardados.
         </p>
@@ -190,6 +196,11 @@ export default async function BarberEditPage({
               Vinculado a <strong>{barber.user.email}</strong> — puede entrar a
               su panel de barbero.
             </span>
+            <form action={resendAction}>
+              <button type="submit" className="underline opacity-70">
+                Reenviar invitación
+              </button>
+            </form>
             <form action={unlinkAction}>
               <button type="submit" className="underline opacity-70">
                 Desvincular
@@ -214,8 +225,9 @@ export default async function BarberEditPage({
           </form>
         )}
         <p className="text-xs opacity-60">
-          El email de invitación automático llega con T12; por ahora el barbero
-          entra en /login con este email.
+          Al vincular le mandamos un correo para que configure su contraseña
+          de acceso. Si no le llegó, usa &quot;Reenviar invitación&quot;
+          (revisa spam también).
         </p>
       </section>
     </div>

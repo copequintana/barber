@@ -7,9 +7,14 @@ import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Entrar · BarberDesk" };
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ok?: string }>;
+}) {
   const session = await getSession();
   if (session?.user) redirect("/select-tenant");
+  const { ok } = await searchParams;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
@@ -21,7 +26,19 @@ export default async function LoginPage() {
         <p className="text-sm opacity-70">Entra para administrar tu barbería.</p>
       </div>
 
+      {ok === "password" ? (
+        <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+          Contraseña guardada. Ya puedes entrar.
+        </p>
+      ) : null}
+
       <LoginForm />
+
+      <p className="text-sm opacity-70">
+        <Link className="underline" href="/reset-password">
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </p>
 
       {signupEnabled ? (
         <p className="text-sm opacity-70">

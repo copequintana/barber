@@ -24,6 +24,12 @@ No hay que tocar código: al detectar la key, todos los envíos (confirmación, 
 2. Registra/verifica el número emisor y obtén el **Phone Number ID**.
 3. Genera un **token permanente** de sistema.
 4. Crea una plantilla de mensaje (idioma `es_MX`) con **4 variables** en el cuerpo, en este orden: nombre del negocio, servicio+barbero, fecha/hora, link de la cita. Envíala a aprobación.
+
+   Plantilla lista para copiar/pegar en Meta (nombre `recordatorio_cita`, categoría Utility, idioma **Spanish (MEX)** exacto):
+   ```
+   Te recordamos tu cita en {{1}}: {{2}}, el {{3}}. Ver, mover o cancelar: {{4}}
+   ```
+   Valores de ejemplo para el formulario de Meta: `{{1}}` Cope Barber · `{{2}}` Corte clásico con Manuel · `{{3}}` martes 16 de septiembre, 5:00 p.m. (hora local) · `{{4}}` https://barber.copesoftware.net/b/cope-barber/cita/abc123. Sin botones ni encabezado — el código de hoy solo rellena el cuerpo.
 5. En `.env`:
    ```
    WHATSAPP_TOKEN="..."

@@ -4,8 +4,21 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { del } from "@vercel/blob";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
 import { prisma, withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
+
+/**
+ * Manda (o reenvía) el link para que el barbero configure su contraseña.
+ * Mismo mecanismo que "olvidé mi contraseña" (T12/Better Auth) — el copy del
+ * correo cambia solo porque en `sendResetPassword` (auth.ts) detecta que el
+ * usuario todavía no tiene ninguna cuenta credential.
+ */
+async function sendBarberInvite(email: string) {
+  await auth.api.requestPasswordReset({
+    body: { email, redirectTo: "/reset-password" },
+  });
+}
 
 function fail(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
@@ -140,8 +153,7 @@ export async function setBarberServices(barberId: string, formData: FormData) {
 
 /**
  * Vincula (o crea) la cuenta de usuario del barbero para que pueda entrar a
- * su panel. El email de invitación real llega con T12 (Resend); mientras,
- * el barbero se registra en /signup con este mismo email.
+ * su panel, y le manda el link para que configure su contraseña.
  */
 export async function linkBarberUser(barberId: string, formData: FormData) {
   const ctx = await requireTenantRole("owner", "admin");
@@ -174,8 +186,24 @@ export async function linkBarberUser(barberId: string, formData: FormData) {
   );
   if (updated.count === 0) fail("/admin/barbers", "Barbero no encontrado");
 
+  await sendBarberInvite(email);
+
   revalidatePath(path);
   redirect(`${path}?ok=1`);
+}
+
+/** Reenvía el link de acceso — para cuando el primer correo no llegó. */
+export async function resendBarberInvite(barberId: string) {
+  const ctx = await requireTenantRole("owner", "admin");
+  const barber = await withTenant(ctx.tenantId, (tx) =>
+    tx.barber.findUnique({ where: { id: barberId }, include: { user: true } }),
+  );
+  if (!barber?.user) fail("/admin/barbers", "Barbero no encontrado");
+
+  await sendBarberInvite(barber.user.email);
+
+  revalidatePath(`/admin/barbers/${barberId}`);
+  redirect(`/admin/barbers/${barberId}?ok=invite`);
 }
 
 export async function unlinkBarberUser(barberId: string) {

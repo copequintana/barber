@@ -3,6 +3,8 @@
  * clientes de correo renderizan de forma consistente.
  */
 
+import { DEFAULT_BRAND_COLOR } from "../tenancy";
+
 export type AppointmentEmailData = {
   tenantName: string;
   brandColor: string | null;
@@ -24,7 +26,12 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function layout(accent: string, title: string, body: string): string {
+function layout(
+  accent: string,
+  title: string,
+  body: string,
+  footer = "Enviado por BarberDesk en nombre de la barbería. Si no reconoces esta cita, ignora este correo.",
+): string {
   return `<!doctype html>
 <html lang="es"><body style="margin:0;background:#f4f4f2;font-family:Arial,Helvetica,sans-serif;color:#26241f;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px;">
@@ -35,7 +42,7 @@ function layout(accent: string, title: string, body: string): string {
 </td></tr>
 ${body}
 <tr><td style="padding:16px 28px 28px;font-size:12px;color:#8a8578;">
-Enviado por BarberDesk en nombre de la barbería. Si no reconoces esta cita, ignora este correo.
+${footer}
 </td></tr>
 </table>
 </td></tr></table>
@@ -153,5 +160,46 @@ ${detailRows(d)}`;
   return {
     subject: `Nueva reserva · ${d.serviceName} con ${d.barberName} · ${d.whenText}`,
     html: layout(accent, "Nueva reserva", body),
+  };
+}
+
+/**
+ * Configurar contraseña (cuenta nueva, p. ej. invitación de barbero) o
+ * restablecerla (la olvidó). Mismo link de Better Auth en los dos casos —
+ * solo cambia el copy según si ya tenía una contraseña.
+ */
+export function setPasswordEmail(input: {
+  url: string;
+  isNewAccount: boolean;
+  tenantName?: string | null;
+}): { subject: string; html: string } {
+  const accent = DEFAULT_BRAND_COLOR;
+  const intro = input.isNewAccount
+    ? `Te dieron acceso como barbero${
+        input.tenantName ? ` en <strong>${esc(input.tenantName)}</strong>` : ""
+      } en BarberDesk. Configura tu contraseña para entrar a tu panel:`
+    : "Pediste restablecer tu contraseña de BarberDesk. Elige una nueva:";
+  const body = `
+<tr><td style="padding:0 28px;font-size:14px;line-height:1.5;">
+<p>${intro}</p>
+</td></tr>
+<tr><td style="padding:20px 28px;" align="center">
+<a href="${esc(input.url)}" style="display:inline-block;background:${accent};color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">${
+    input.isNewAccount ? "Configurar mi contraseña" : "Elegir nueva contraseña"
+  }</a>
+</td></tr>
+<tr><td style="padding:0 28px;font-size:13px;color:#8a8578;">
+Si tú no lo pediste, ignora este correo — no se cambia nada hasta que abras el link. Expira en unos días.
+</td></tr>`;
+  return {
+    subject: input.isNewAccount
+      ? "Configura tu acceso · BarberDesk"
+      : "Restablece tu contraseña · BarberDesk",
+    html: layout(
+      accent,
+      input.isNewAccount ? "Bienvenido a BarberDesk" : "Restablece tu contraseña",
+      body,
+      "Enviado por BarberDesk. Si no reconoces esta solicitud, ignora este correo.",
+    ),
   };
 }

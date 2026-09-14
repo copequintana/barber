@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./db";
+import { sendEmail } from "./email/send";
+import { setPasswordEmail } from "./email/templates";
 import { signupEnabled } from "./flags";
 
 /**
@@ -50,6 +52,36 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     // Cerrar el registro no afecta a las cuentas ya creadas.
     disableSignUp: !signupEnabled,
+    // 3 días: el mismo link sirve para "olvidé mi contraseña" (urgente) y
+    // para la invitación de un barbero (puede tardar en revisar su correo).
+    resetPasswordTokenExpiresIn: 3 * 24 * 60 * 60,
+    sendResetPassword: async ({ user, url }) => {
+      // Sin cuenta credential todavía = invitación (barbero recién
+      // vinculado), no olvido de contraseña: el copy del correo cambia
+      // según el caso. El nombre del negocio sale de `memberships` (tabla
+      // global, sin RLS) y no de `barbers` (con RLS: fuera de una request
+      // de admin no hay app.tenant_id seteado, así que esa consulta
+      // devolvería vacío siempre).
+      const [hasPassword, membership] = await Promise.all([
+        prisma.account.findFirst({
+          where: { userId: user.id, providerId: "credential" },
+          select: { id: true },
+        }),
+        prisma.membership.findFirst({
+          where: { userId: user.id, role: "barber" },
+          select: { tenant: { select: { name: true } } },
+        }),
+      ]);
+      const { subject, html } = setPasswordEmail({
+        url,
+        isNewAccount: !hasPassword,
+        tenantName: membership?.tenant.name,
+      });
+      const result = await sendEmail({ to: user.email, subject, html });
+      if (!result.ok) {
+        console.error("[auth] error enviando email de contraseña:", result.error);
+      }
+    },
   },
   advanced: {
     // users.id y las FKs son columnas uuid de Postgres

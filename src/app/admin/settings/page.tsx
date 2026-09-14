@@ -150,6 +150,51 @@ export default async function SettingsPage({
           </p>
         </div>
 
+        <div className="mt-2">
+          <h2 className="text-lg font-semibold">Recordatorios</h2>
+          <p className="text-sm opacity-70">
+            Le avisan al cliente antes de su cita para reducir las faltas.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="reminder24hEnabled"
+              defaultChecked={tenant.reminder24hEnabled}
+              className="h-4 w-4"
+            />
+            Recordatorio 24 horas antes
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="reminder2hEnabled"
+              defaultChecked={tenant.reminder2hEnabled}
+              className="h-4 w-4"
+            />
+            Recordatorio 2 horas antes
+          </label>
+        </div>
+
+        <div className="flex flex-col gap-1 rounded-lg border border-black/10 p-4 dark:border-white/15">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="whatsappEnabled"
+              defaultChecked={tenant.whatsappEnabled}
+              className="h-4 w-4"
+            />
+            Enviar recordatorios por WhatsApp
+          </label>
+          <p className="text-xs opacity-60">
+            Requiere una cuenta de WhatsApp Business (Meta) verificada. Mientras
+            no esté configurada, o si un envío falla, el recordatorio sale por
+            correo automáticamente — puedes dejar esto activado desde ya.
+          </p>
+        </div>
+
         <button type="submit" className="self-start rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground">
           Guardar
         </button>
