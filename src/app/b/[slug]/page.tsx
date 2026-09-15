@@ -37,10 +37,17 @@ export default async function TenantPublicPage({ params }: Props) {
     maximumFractionDigits: 0,
   });
 
-  const hasContact = Boolean(tenant.phone || tenant.address);
-  const mapsUrl = tenant.address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tenant.address)}`
-    : null;
+  const hasContact = Boolean(
+    tenant.phone || tenant.address || (tenant.lat != null && tenant.lng != null),
+  );
+  // Prioriza el pin del mapa (preciso, puesto a mano) sobre la dirección en
+  // texto — esta última puede ser incompleta o geocodificar mal.
+  const mapsUrl =
+    tenant.lat != null && tenant.lng != null
+      ? `https://www.google.com/maps/search/?api=1&query=${tenant.lat},${tenant.lng}`
+      : tenant.address
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tenant.address)}`
+        : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col pb-10">

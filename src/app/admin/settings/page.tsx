@@ -145,8 +145,9 @@ export default async function SettingsPage({
             className={inputClass}
           />
           <p className="text-xs opacity-60">
-            Se usa además para armar el link &quot;Cómo llegar&quot; a Google
-            Maps.
+            Se muestra en tu página pública. Si además pones el pin abajo en
+            Ubicación, el link &quot;Cómo llegar&quot; usa el pin (más
+            preciso) en vez de este texto.
           </p>
         </div>
 

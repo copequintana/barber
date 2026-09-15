@@ -9,10 +9,14 @@ const ACCEPT = "image/png,image/jpeg,image/webp";
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 /** El SDK de Blob tira un mensaje técnico en inglés cuando no hay store
- * conectado (BLOB_READ_WRITE_TOKEN ausente); se traduce ese caso puntual. */
+ * conectado (BLOB_READ_WRITE_TOKEN ausente); se traduce ese caso puntual.
+ * Se deja el mensaje original en la consola: el texto amigable no alcanza
+ * para diagnosticar si la causa real es otra (ver "token" en la respuesta
+ * de Blob por otro motivo, p. ej. CORS o un scope de token distinto). */
 function friendlyError(err: unknown, fallback: string): string {
   const message = err instanceof Error ? err.message : "";
   if (/token/i.test(message)) {
+    console.error("[image-upload] error con 'token' en el mensaje:", err);
     return "Falta conectar el almacenamiento de imágenes en Vercel (Storage → Blob). Avisa a quien administra el hosting.";
   }
   return message || fallback;
