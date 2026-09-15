@@ -9,6 +9,7 @@ import { getBarberDay, getOwnBarber } from "@/lib/barber-panel";
 import { ACTIVE_TENANT_COOKIE, requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
 import { blockSlot, markOutcome, removeTimeOff } from "./actions";
+import { DateJumpInput } from "./date-jump";
 
 export const metadata = { title: "Mi día · BarberDesk" };
 
@@ -73,9 +74,23 @@ export default async function BarberHomePage({
     .plus({ minutes: 15 - (nowLocal.minute % 15) })
     .toFormat("HH:mm")}`;
 
+  const dayIsEmpty =
+    data != null && data.appointments.length === 0 && data.timeOff.length === 0;
+
+  const dayTotal =
+    data?.appointments
+      .filter((a) => a.status !== "no_show")
+      .reduce((sum, a) => sum + Number(a.priceAtBooking), 0) ?? 0;
+  const money = new Intl.NumberFormat("es", {
+    style: "currency",
+    currency: tenant.currency,
+    maximumFractionDigits: 0,
+  }).format(dayTotal);
+  const nowMs = nowLocal.toMillis();
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-5 px-4 py-6">
-      <header className="flex items-center justify-between">
+    <main className="mx-auto flex h-dvh max-w-md flex-col gap-5 px-4 py-6">
+      <header className="flex shrink-0 items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">
             {barber ? barber.displayName : "Mi día"}
@@ -96,7 +111,7 @@ export default async function BarberHomePage({
       </header>
 
       {error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        <p className="shrink-0 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           {error}
         </p>
       ) : null}
@@ -108,7 +123,7 @@ export default async function BarberHomePage({
         </p>
       ) : (
         <>
-          <nav className="flex items-center justify-between text-sm">
+          <nav className="flex shrink-0 items-center justify-between text-sm">
             <Link
               href={`/barber?date=${day.minus({ days: 1 }).toISODate()}`}
               className="rounded-md border border-black/15 px-3 py-1.5 dark:border-white/20"
@@ -119,11 +134,14 @@ export default async function BarberHomePage({
               <p className="font-semibold capitalize">
                 {day.setLocale("es").toFormat("cccc d 'de' LLLL")}
               </p>
-              {!day.equals(today) ? (
-                <Link href="/barber" className="text-xs underline opacity-70">
-                  Volver a hoy
-                </Link>
-              ) : null}
+              <div className="mt-1 flex items-center justify-center gap-2">
+                {!day.equals(today) ? (
+                  <Link href="/barber" className="text-xs underline opacity-70">
+                    Volver a hoy
+                  </Link>
+                ) : null}
+                <DateJumpInput defaultValue={dateISO} />
+              </div>
             </div>
             <Link
               href={`/barber?date=${day.plus({ days: 1 }).toISODate()}`}
@@ -133,8 +151,24 @@ export default async function BarberHomePage({
             </Link>
           </nav>
 
-          {data && data.appointments.length === 0 && data.timeOff.length === 0 ? (
-            <p className="py-4 text-center text-sm opacity-70">
+          {data && !dayIsEmpty ? (
+            <p className="shrink-0 text-sm opacity-70">
+              {data.appointments.length}{" "}
+              {data.appointments.length === 1 ? "cita" : "citas"} · {money}
+            </p>
+          ) : null}
+
+          {/* Alto estable: esta zona siempre ocupa el mismo espacio (llena
+              lo que queda del viewport) sin importar cuántas citas tenga el
+              día — el contenido hace scroll adentro en vez de mover el
+              tamaño de la tarjeta al cambiar de día. */}
+          <div
+            className={`flex flex-1 flex-col gap-5 overflow-y-auto ${
+              dayIsEmpty ? "items-center justify-center" : ""
+            }`}
+          >
+          {dayIsEmpty ? (
+            <p className="text-center text-sm opacity-70">
               Sin citas este día.
             </p>
           ) : null}
@@ -162,10 +196,16 @@ export default async function BarberHomePage({
               const chip = STATUS_CHIP[a.status] ?? STATUS_CHIP.confirmed;
               const editable =
                 a.status === "confirmed" || a.status === "pending";
+              // Ya pasó y sigue sin marcarse: la atenuamos para que resalte
+              // lo que sigue en el día (completed/no_show ya se ven distinto
+              // por su chip, no hace falta atenuarlas también).
+              const isPast = editable && a.endsAt.getTime() < nowMs;
               return (
                 <li
                   key={a.id}
-                  className="flex flex-col gap-2 rounded-lg border border-black/10 p-3 dark:border-white/15"
+                  className={`flex flex-col gap-2 rounded-lg border border-black/10 p-3 dark:border-white/15 ${
+                    isPast ? "opacity-50" : ""
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -239,8 +279,9 @@ export default async function BarberHomePage({
               );
             })}
           </ul>
+          </div>
 
-          <details className="rounded-lg border border-black/10 p-3 dark:border-white/15">
+          <details className="shrink-0 rounded-lg border border-black/10 p-3 dark:border-white/15">
             <summary className="flex cursor-pointer items-center gap-1.5 text-sm font-medium">
               <Ban className="h-4 w-4" /> Bloquear un hueco
             </summary>
