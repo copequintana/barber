@@ -10,7 +10,7 @@ export const LocationPickerLoader = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-64 w-full animate-pulse rounded-md border border-black/15 bg-black/5 dark:border-white/20 dark:bg-white/5" />
+      <div className="h-64 w-full animate-pulse rounded-lg border bg-muted" />
     ),
   },
 );

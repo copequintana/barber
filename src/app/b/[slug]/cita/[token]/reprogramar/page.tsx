@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DateTime } from "luxon";
+import { BookingHeader } from "@/components/booking/page-header";
 import { getAppointmentByToken } from "@/lib/booking";
+import { getBarberWeekdays } from "@/lib/catalog";
 import { getTenantBySlug } from "@/lib/tenancy";
-import { formatZoned } from "@/lib/time";
+import { longDateEs, utcToZoned } from "@/lib/time";
 import { ReschedulePicker } from "./picker";
 
 export const metadata = { title: "Reprogramar cita · BarberDesk" };
@@ -21,21 +22,25 @@ export default async function ReprogramarPage({
   if (!appt.cancelable) redirect(`/b/${slug}/cita/${token}?error=1`);
 
   const todayISO = DateTime.now().setZone(tenant.timezone).toISODate()!;
+  const weekdays = await getBarberWeekdays(tenant.id, appt.barberId);
+  const current = utcToZoned(tenant.timezone, appt.startsAt);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 px-6 py-8">
-      <div>
-        <Link
-          href={`/b/${slug}/cita/${token}`}
-          className="text-sm underline opacity-70"
-        >
-          ← Mi cita
-        </Link>
-        <h1 className="mt-1 text-2xl font-bold">Cambiar horario</h1>
-        <p className="text-sm opacity-70">
-          {appt.serviceName} con {appt.barberName} · actualmente{" "}
-          {formatZoned(tenant.timezone, appt.startsAt)}. Elige el nuevo
-          horario (mismo barbero).
+    <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-6">
+      <BookingHeader
+        backHref={`/b/${slug}/cita/${token}`}
+        backLabel="Volver a mi cita"
+        eyebrow={tenant.name}
+        title="Cambiar horario"
+      />
+
+      <div className="flex flex-col gap-1 rounded-xl border bg-card px-4 py-3 shadow-card">
+        <p className="eyebrow">Ahora</p>
+        <p className="font-medium">
+          {longDateEs(current)} · <span className="font-num">{current.toFormat("HH:mm")}</span>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {appt.serviceName} con {appt.barberName} · elige el nuevo horario con el mismo barbero
         </p>
       </div>
 
@@ -44,6 +49,7 @@ export default async function ReprogramarPage({
         token={token}
         serviceId={appt.serviceId}
         barberId={appt.barberId}
+        weekdays={weekdays}
         timezone={tenant.timezone}
         todayISO={todayISO}
         maxAdvanceDays={tenant.maxAdvanceDays}

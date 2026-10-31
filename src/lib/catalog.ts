@@ -1,4 +1,5 @@
 import { withTenant } from "./db";
+import type { WeeklyRange } from "./hours";
 
 /**
  * Catálogo público de un tenant: solo servicios activos con al menos un
@@ -19,7 +20,17 @@ export type BookingCatalog = {
       photoUrl: string | null;
     }[];
   }[];
+  barberWeekdays: Record<string, number[]>;
 };
+
+function weekdaysByBarber(rows: { barberId: string; weekday: number }[]) {
+  const map: Record<string, number[]> = {};
+  for (const r of rows) {
+    const days = (map[r.barberId] ??= []);
+    if (!days.includes(r.weekday)) days.push(r.weekday);
+  }
+  return map;
+}
 
 export async function getBookingCatalog(
   tenantId: string,
@@ -38,7 +49,12 @@ export async function getBookingCatalog(
         },
       },
     });
+    const hours = await tx.workingHour.findMany({
+      where: { barber: { active: true } },
+      select: { barberId: true, weekday: true },
+    });
     return {
+      barberWeekdays: weekdaysByBarber(hours),
       services: services.map((s) => ({
         id: s.id,
         name: s.name,
@@ -68,6 +84,23 @@ export function getPublicCatalog(tenantId: string) {
       where: { active: true },
       orderBy: { displayName: "asc" },
     });
-    return { services, barbers };
+    const hours: WeeklyRange[] = await tx.workingHour.findMany({
+      where: { barber: { active: true } },
+      select: { weekday: true, startMin: true, endMin: true },
+    });
+    return { services, barbers, hours };
   });
+}
+
+export async function getBarberWeekdays(
+  tenantId: string,
+  barberId: string,
+): Promise<number[]> {
+  const rows = await withTenant(tenantId, (tx) =>
+    tx.workingHour.findMany({
+      where: { barberId },
+      select: { barberId: true, weekday: true },
+    }),
+  );
+  return weekdaysByBarber(rows)[barberId] ?? [];
 }

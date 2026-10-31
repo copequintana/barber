@@ -1,162 +1,215 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronRight, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
+import { SubmitButton } from "@/components/admin/submit-button";
+import { BarberAvatar } from "@/components/booking/barber-avatar";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { Notice } from "@/components/notice";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
+import { formatMoney } from "@/lib/money";
+import { getTenantById } from "@/lib/tenancy";
+import { cn } from "@/lib/utils";
 import { deleteService, updateService } from "../actions";
 
 export const metadata = { title: "Editar servicio · BarberDesk" };
 
-const inputClass =
-  "rounded-md border border-black/15 bg-transparent px-3 py-2 dark:border-white/20";
-
 export default async function ServiceEditPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
   const ctx = await requireTenantRole("owner", "admin");
+  const tenant = (await getTenantById(ctx.tenantId))!;
   const { id } = await params;
-  const { error, ok } = await searchParams;
 
   const service = await withTenant(ctx.tenantId, (tx) =>
     tx.service.findUnique({
       where: { id },
-      include: { barbers: { include: { barber: true } } },
+      include: {
+        barbers: {
+          include: { barber: true },
+          orderBy: { barber: { displayName: "asc" } },
+        },
+      },
     }),
   );
   if (!service) notFound();
 
   const updateAction = updateService.bind(null, service.id);
   const deleteAction = deleteService.bind(null, service.id);
+  const money = (amount: number) => formatMoney(amount, tenant.currency);
 
   return (
-    <div className="flex max-w-2xl flex-col gap-8">
-      <div>
-        <Link href="/admin/services" className="text-sm underline opacity-70">
-          ← Servicios
-        </Link>
-        <h1 className="mt-1 text-2xl font-bold">{service.name}</h1>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={service.name}
+        back={{ href: "/admin/services", label: "Servicios" }}
+        description={
+          !service.active
+            ? "Inactivo: no se puede reservar."
+            : service.barbers.length === 0
+              ? "Activo, pero ningún barbero lo realiza todavía."
+              : "Visible en tu página de reservas."
+        }
+      />
 
-      {error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          {error}
-        </p>
-      ) : null}
-      {ok ? (
-        <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-          Cambios guardados.
-        </p>
-      ) : null}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle>Datos del servicio</CardTitle>
+            <CardDescription>Cambiar la duración no afecta las citas ya reservadas.</CardDescription>
+          </CardHeader>
+          <form action={updateAction} className="flex flex-col gap-4">
+            <CardContent>
+              <FieldGroup className="gap-4">
+                <Field>
+                  <FieldLabel htmlFor="name">Nombre</FieldLabel>
+                  <Input id="name" name="name" required minLength={2} defaultValue={service.name} />
+                </Field>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Field>
+                    <FieldLabel htmlFor="durationMin">Duración (min)</FieldLabel>
+                    <Input
+                      id="durationMin"
+                      name="durationMin"
+                      type="number"
+                      required
+                      min={5}
+                      max={480}
+                      defaultValue={service.durationMin}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="bufferMin">Descanso (min)</FieldLabel>
+                    <Input
+                      id="bufferMin"
+                      name="bufferMin"
+                      type="number"
+                      min={0}
+                      max={120}
+                      defaultValue={service.bufferMin}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="price">Precio base</FieldLabel>
+                    <Input
+                      id="price"
+                      name="price"
+                      type="number"
+                      required
+                      min={0}
+                      step="0.01"
+                      inputMode="decimal"
+                      defaultValue={Number(service.price)}
+                    />
+                  </Field>
+                </div>
+                <FieldDescription>
+                  El descanso es el tiempo de limpieza tras el servicio: el horario reservado
+                  ocupa duración + descanso.
+                </FieldDescription>
+                <div className="flex items-start justify-between gap-4 rounded-lg border bg-muted/40 p-3">
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="active">Activo</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Se puede reservar en tu página.
+                    </p>
+                  </div>
+                  <Switch id="active" name="active" defaultChecked={service.active} />
+                </div>
+              </FieldGroup>
+            </CardContent>
+            <CardFooter className="justify-end">
+              <SubmitButton>Guardar cambios</SubmitButton>
+            </CardFooter>
+          </form>
+        </Card>
 
-      <form action={updateAction} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" htmlFor="name">
-            Nombre
-          </label>
-          <input
-            id="name"
-            name="name"
-            required
-            defaultValue={service.name}
-            className={inputClass}
-          />
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" htmlFor="durationMin">
-              Duración (min)
-            </label>
-            <input
-              id="durationMin"
-              name="durationMin"
-              type="number"
-              required
-              min={5}
-              max={480}
-              defaultValue={service.durationMin}
-              className={inputClass}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" htmlFor="bufferMin">
-              Buffer (min)
-            </label>
-            <input
-              id="bufferMin"
-              name="bufferMin"
-              type="number"
-              min={0}
-              max={120}
-              defaultValue={service.bufferMin}
-              className={inputClass}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" htmlFor="price">
-              Precio base
-            </label>
-            <input
-              id="price"
-              name="price"
-              type="number"
-              required
-              min={0}
-              step="0.01"
-              defaultValue={Number(service.price)}
-              className={inputClass}
-            />
-          </div>
-        </div>
-        <p className="text-xs opacity-60">
-          El buffer es el descanso/limpieza tras el servicio: el slot ocupa
-          duración + buffer. Cambiar la duración no afecta citas ya creadas.
-        </p>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="active" defaultChecked={service.active} />
-          Activo (reservable en la página pública)
-        </label>
-        <button
-          type="submit"
-          className="self-start rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground"
-        >
-          Guardar
-        </button>
-      </form>
+        <div className="flex min-w-0 flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Barberos que lo realizan</CardTitle>
+              <CardDescription>Se asigna desde la ficha de cada barbero.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {service.barbers.length === 0 ? (
+                <Notice tone="warning">
+                  Nadie lo realiza todavía, así que no aparece en tu página. Asígnalo desde
+                  la ficha de un barbero en{" "}
+                  <Link href="/admin/barbers" className="font-medium underline underline-offset-4">
+                    Barberos
+                  </Link>
+                  .
+                </Notice>
+              ) : (
+                <ul className="flex flex-col divide-y rounded-lg border">
+                  {service.barbers.map((bs) => (
+                    <li key={bs.barberId}>
+                      <Link
+                        href={`/admin/barbers/${bs.barberId}`}
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-muted/60"
+                      >
+                        <BarberAvatar
+                          name={bs.barber.displayName}
+                          photoUrl={bs.barber.photoUrl}
+                          className="size-8 text-sm"
+                        />
+                        <span className="min-w-0 flex-1 truncate font-medium">
+                          {bs.barber.displayName}
+                        </span>
+                        <span className="font-num shrink-0 text-muted-foreground">
+                          {bs.priceOverride != null
+                            ? money(Number(bs.priceOverride))
+                            : `${money(Number(service.price))} base`}
+                        </span>
+                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Barberos que lo realizan</h2>
-        {service.barbers.length === 0 ? (
-          <p className="text-sm opacity-70">
-            Nadie aún — el servicio no aparece en la página pública. Asígnalo
-            desde la ficha de un barbero.
-          </p>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {service.barbers.map((bs) => (
-              <li key={bs.barberId}>
-                <Link
-                  href={`/admin/barbers/${bs.barberId}`}
-                  className="rounded-full border border-black/10 px-3 py-1 text-sm hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/10"
+          <Card className="border-danger/30">
+            <CardHeader>
+              <CardTitle>Borrar servicio</CardTitle>
+              <CardDescription>
+                Si ya tiene citas registradas no se puede borrar: desactívalo para que deje
+                de reservarse.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="justify-end">
+              <form action={deleteAction}>
+                <ConfirmSubmit
+                  title={`¿Borrar ${service.name} definitivamente?`}
+                  description="Deja de aparecer en tu página y en la agenda. Esta acción no se puede deshacer."
+                  confirmLabel="Sí, borrar servicio"
+                  pendingLabel="Borrando…"
+                  className={cn(buttonVariants({ variant: "destructive" }), "gap-1.5")}
                 >
-                  {bs.barber.displayName}
-                  {bs.priceOverride != null
-                    ? ` · $${Number(bs.priceOverride)}`
-                    : ""}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <form action={deleteAction}>
-        <button type="submit" className="text-sm text-red-700 underline dark:text-red-400">
-          Borrar servicio definitivamente
-        </button>
-      </form>
+                  <Trash2 className="size-4" /> Borrar definitivamente
+                </ConfirmSubmit>
+              </form>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

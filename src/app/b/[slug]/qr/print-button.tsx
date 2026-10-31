@@ -7,7 +7,7 @@ export function PrintButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="rounded-md bg-[var(--brand)] px-5 py-2.5 font-medium text-white print:hidden"
+      className="cta-label rounded-lg bg-brand px-6 py-2.5 text-brand-foreground print:hidden"
     >
       Imprimir
     </button>

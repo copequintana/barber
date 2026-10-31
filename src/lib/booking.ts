@@ -181,6 +181,7 @@ export type CancelableAppointment = {
   barberId: string;
   barberName: string;
   customerName: string;
+  price: number;
   /** ¿La política del tenant aún permite cancelar/reprogramar? */
   cancelable: boolean;
 };
@@ -220,6 +221,7 @@ export async function getAppointmentByToken(
     barberId: appt.barberId,
     barberName: appt.barber.displayName,
     customerName: appt.customer.name,
+    price: Number(appt.priceAtBooking),
     cancelable,
   };
 }

@@ -201,3 +201,44 @@ export async function getReportRows(
     }),
   );
 }
+
+export type DayAppointment = {
+  id: string;
+  startsAt: Date;
+  endsAt: Date;
+  status: string;
+  price: number;
+  customerName: string;
+  serviceName: string;
+  barberName: string;
+};
+
+export async function getDayAppointments(
+  tenantId: string,
+  timezone: string,
+  dateISO: string,
+): Promise<DayAppointment[]> {
+  const day = DateTime.fromISO(dateISO, { zone: timezone }).startOf("day");
+  if (!day.isValid) return [];
+  const start = day.toUTC().toJSDate();
+  const end = day.plus({ days: 1 }).toUTC().toJSDate();
+
+  const rows = await withTenant(tenantId, (tx) =>
+    tx.appointment.findMany({
+      where: { status: { not: "cancelled" }, startsAt: { gte: start, lt: end } },
+      include: { customer: true, service: true, barber: true },
+      orderBy: { startsAt: "asc" },
+    }),
+  );
+
+  return rows.map((a) => ({
+    id: a.id,
+    startsAt: a.startsAt,
+    endsAt: a.endsAt,
+    status: a.status,
+    price: Number(a.priceAtBooking),
+    customerName: a.customer.name,
+    serviceName: a.service.name,
+    barberName: a.barber.displayName,
+  }));
+}

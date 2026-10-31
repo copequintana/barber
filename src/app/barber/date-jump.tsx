@@ -14,7 +14,8 @@ export function DateJumpInput({ defaultValue }: { defaultValue: string }) {
         if (!e.target.value) return;
         router.push(`/barber?date=${e.target.value}`);
       }}
-      className="rounded border border-black/15 bg-transparent px-1.5 py-0.5 text-xs dark:border-white/20"
+      aria-label="Ir a otra fecha"
+      className="h-8 rounded-lg border border-input bg-card px-2 text-sm"
     />
   );
 }

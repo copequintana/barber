@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma, withTenant } from "./db";
+import { formatMoney } from "./money";
+import { getTheme } from "./themes";
 import { sendEmail } from "./email/send";
 import {
   cancellationEmail,
@@ -61,21 +63,16 @@ export async function loadAppointmentEmailData(
   );
   if (!appt) return null;
 
-  const money = new Intl.NumberFormat("es", {
-    style: "currency",
-    currency: tenant.currency,
-    maximumFractionDigits: 0,
-  });
   const citaUrl = `${appBaseUrl()}/b/${tenant.slug}/cita/${appt.cancelToken}`;
 
   return {
     tenantName: tenant.name,
     tenantSlug: tenant.slug,
-    brandColor: tenant.brandColor,
+    brandColor: tenant.brandColor ?? getTheme(tenant.theme).accent,
     serviceName: appt.service.name,
     barberName: appt.barber.displayName,
     whenText: `${formatZoned(tenant.timezone, appt.startsAt)} (hora local)`,
-    priceText: money.format(Number(appt.priceAtBooking)),
+    priceText: formatMoney(Number(appt.priceAtBooking), tenant.currency),
     customerName: appt.customer.name,
     customerEmail: appt.customer.email,
     customerPhone: appt.customer.phone,

@@ -25,7 +25,7 @@ export function DateTimeInput({
         }
         onClick?.(e);
       }}
-      className={`cursor-pointer transition-colors hover:border-black/30 dark:hover:border-white/35 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:transition-opacity hover:[&::-webkit-calendar-picker-indicator]:opacity-100 ${className}`}
+      className={`cursor-pointer transition-colors hover:border-ring/60 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:transition-opacity hover:[&::-webkit-calendar-picker-indicator]:opacity-100 ${className}`}
     />
   );
 }

@@ -54,6 +54,11 @@ export function formatZoned(timezone: string, date: Date): string {
     .toFormat("ccc d LLL yyyy, HH:mm");
 }
 
+export function longDateEs(date: DateTime): string {
+  const text = date.setLocale("es").toFormat("cccc d 'de' LLLL");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /** ¿Se solapan dos rangos [aStart,aEnd) y [bStart,bEnd)? (en minutos o ms) */
 export function rangesOverlap(
   aStart: number,

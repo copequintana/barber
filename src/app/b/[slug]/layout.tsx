@@ -1,4 +1,6 @@
-import { DEFAULT_BRAND_COLOR, getTenantBySlug } from "@/lib/tenancy";
+import { readableTextOn } from "@/lib/color";
+import { getTenantBySlug } from "@/lib/tenancy";
+import { getTheme } from "@/lib/themes";
 
 type Props = {
   children: React.ReactNode;
@@ -16,9 +18,18 @@ export default async function TenantPublicLayout({ children, params }: Props) {
   const tenant = await getTenantBySlug(slug);
   if (!tenant) return children;
 
+  const brand = tenant.brandColor
+    ? ({
+        "--brand": tenant.brandColor,
+        "--brand-foreground": readableTextOn(tenant.brandColor),
+      } as React.CSSProperties)
+    : undefined;
+
   return (
     <div
-      style={{ "--brand": tenant.brandColor ?? DEFAULT_BRAND_COLOR } as React.CSSProperties}
+      data-tenant-theme={getTheme(tenant.theme).id}
+      className="flex flex-1 flex-col bg-background font-sans text-foreground"
+      style={brand}
     >
       {children}
     </div>

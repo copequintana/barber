@@ -38,15 +38,20 @@ export function LocationPicker({
   initialLat,
   initialLng,
   onSave,
+  latName,
+  lngName,
 }: {
   initialLat: number | null;
   initialLng: number | null;
-  onSave: (lat: number, lng: number) => Promise<void>;
+  onSave?: (lat: number, lng: number) => Promise<void>;
+  latName?: string;
+  lngName?: string;
 }) {
   const hasInitial = initialLat != null && initialLng != null;
   const [position, setPosition] = useState<{ lat: number; lng: number }>(
     hasInitial ? { lat: initialLat, lng: initialLng } : DEFAULT_MAP_CENTER,
   );
+  const [placed, setPlaced] = useState(hasInitial);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +70,14 @@ export function LocationPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function move(lat: number, lng: number) {
+    setPosition({ lat, lng });
+    setPlaced(true);
+    setSaved(false);
+  }
+
   async function handleSave() {
+    if (!onSave) return;
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -83,7 +95,13 @@ export function LocationPicker({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="h-64 w-full overflow-hidden rounded-md border border-black/15 dark:border-white/20">
+      {latName && lngName && placed ? (
+        <>
+          <input type="hidden" name={latName} value={position.lat} />
+          <input type="hidden" name={lngName} value={position.lng} />
+        </>
+      ) : null}
+      <div className="isolate h-64 w-full overflow-hidden rounded-lg border">
         <MapContainer
           center={position}
           zoom={hasInitial ? 15 : 12}
@@ -101,34 +119,32 @@ export function LocationPicker({
             eventHandlers={{
               dragend: (e) => {
                 const { lat, lng } = e.target.getLatLng();
-                setPosition({ lat, lng });
+                move(lat, lng);
               },
             }}
           />
-          <ClickToMove onMove={(lat, lng) => setPosition({ lat, lng })} />
+          <ClickToMove onMove={move} />
         </MapContainer>
       </div>
-      <p className="text-xs opacity-60">
-        Arrastra el pin (o toca el mapa) hasta la entrada de tu barbería.
+      <p className="text-sm text-muted-foreground">
+        {placed
+          ? "Arrastra el pin (o toca el mapa) hasta la entrada de tu barbería."
+          : "Aún no marcas tu ubicación: arrastra el pin o toca el mapa en la entrada de tu barbería."}
       </p>
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
-        >
-          {saving ? "Guardando…" : "Guardar ubicación"}
-        </button>
-        {saved ? (
-          <span className="text-sm text-emerald-700 dark:text-emerald-400">
-            Guardado ✓
-          </span>
-        ) : null}
-      </div>
-      {error ? (
-        <p className="text-xs text-red-700 dark:text-red-400">{error}</p>
+      {onSave ? (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {saving ? "Guardando…" : "Guardar ubicación"}
+          </button>
+          {saved ? <span className="text-sm text-success">Guardado ✓</span> : null}
+        </div>
       ) : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
     </div>
   );
 }

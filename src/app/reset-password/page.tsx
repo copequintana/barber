@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AuthShell } from "@/components/auth-shell";
 import { getSession } from "@/lib/auth";
 import { ResetPasswordForm } from "./reset-password-form";
 
@@ -16,21 +16,20 @@ export default async function ResetPasswordPage({
   const { token } = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
-      <div>
-        <div className="flex items-center gap-2">
-          <Image src="/logo-mark.png" alt="" width={28} height={28} />
-          <h1 className="text-2xl font-bold">BarberDesk</h1>
-        </div>
-      </div>
-
-      <ResetPasswordForm token={token} />
-
-      <p className="text-sm opacity-70">
-        <Link className="underline" href="/login">
-          ← Volver a entrar
+    <AuthShell
+      title={token ? "Elige tu contraseña" : "Restablecer contraseña"}
+      description={
+        token
+          ? "Escribe la contraseña nueva para tu cuenta."
+          : "Te mandamos un link a tu correo para elegir una contraseña nueva."
+      }
+      footer={
+        <Link className="font-medium text-foreground underline underline-offset-4" href="/login">
+          Volver a entrar
         </Link>
-      </p>
-    </main>
+      }
+    >
+      <ResetPasswordForm token={token} />
+    </AuthShell>
   );
 }

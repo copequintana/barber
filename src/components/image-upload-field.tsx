@@ -3,6 +3,10 @@
 import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
+import { ImageUp, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import { FallbackImage } from "./fallback-image";
 
 const ACCEPT = "image/png,image/jpeg,image/webp";
@@ -97,33 +101,40 @@ export function ImageUploadField({
           <FallbackImage src={currentUrl} alt="" className={previewClassName} />
         ) : (
           <div
-            className={`${previewClassName} flex shrink-0 items-center justify-center rounded-md border border-dashed border-black/15 text-center text-xs opacity-40 dark:border-white/20`}
+            className={cn(
+              previewClassName,
+              "flex shrink-0 items-center justify-center border border-dashed border-border bg-muted text-center text-xs text-muted-foreground",
+            )}
           >
             Sin imagen
           </div>
         )}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex gap-3">
-            <button
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex flex-wrap gap-2">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => inputRef.current?.click()}
               disabled={busy}
-              className="rounded-md border border-black/15 px-3 py-1.5 text-sm font-medium disabled:opacity-50 dark:border-white/20"
             >
+              {busy ? <Spinner /> : <ImageUp />}
               {busy ? "Subiendo…" : currentUrl ? "Reemplazar" : "Subir imagen"}
-            </button>
+            </Button>
             {currentUrl ? (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={handleRemove}
                 disabled={busy}
-                className="text-sm text-red-700 underline disabled:opacity-50 dark:text-red-400"
+                className="text-danger hover:bg-danger-soft hover:text-danger"
               >
-                Quitar
-              </button>
+                <Trash2 /> Quitar
+              </Button>
             ) : null}
           </div>
-          {help ? <p className="text-xs opacity-60">{help}</p> : null}
+          {help ? <p className="text-xs text-muted-foreground">{help}</p> : null}
         </div>
       </div>
       <input
@@ -133,7 +144,7 @@ export function ImageUploadField({
         className="hidden"
         onChange={handleFile}
       />
-      {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-danger">{error}</p> : null}
     </div>
   );
 }

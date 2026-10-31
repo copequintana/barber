@@ -36,15 +36,14 @@ test("un cliente reserva sin cuenta en el flujo de 4 pasos", async ({
     ]);
     return slot.isVisible().catch(() => false);
   };
+  const openDays = page.locator("div.overflow-x-auto button:not([disabled])");
   for (let i = 0; i < 8; i++) {
     if (await dayResolved()) break;
-    await page
-      .locator("div.overflow-x-auto button")
-      .nth(i + 1)
-      .click();
+    await openDays.nth(i + 1).click();
   }
   await expect(slot).toBeVisible();
   await slot.click();
+  await page.getByRole("button", { name: /Continuar/ }).click();
 
   // Paso 4: datos. Si otro cliente (el otro worker del test) gana el slot,
   // se ejercita la recuperación: refrescar horarios, elegir otro, reintentar.
@@ -73,6 +72,7 @@ test("un cliente reserva sin cuenta en el flujo de 4 pasos", async ({
       .click();
     expect(await dayResolved()).toBe(true);
     await slot.click();
+    await page.getByRole("button", { name: /Continuar/ }).click();
   }
 
   // Confirmación: página de la cita con link permanente
@@ -107,7 +107,7 @@ test("un cliente reserva sin cuenta en el flujo de 4 pasos", async ({
     // buscar un día con horarios, desde MAÑANA: un slot de hoy podría quedar
     // a <2h y entonces la política ya no permitiría cancelarla al final
     for (let i = 0; i < 8; i++) {
-      await page.locator("div.overflow-x-auto button").nth(i + 1).click();
+      await openDays.nth(i + 1).click();
       if (await rescheduleDayResolved()) break;
     }
     await expect(newSlot).toBeVisible();
@@ -136,5 +136,6 @@ test("un cliente reserva sin cuenta en el flujo de 4 pasos", async ({
 
   // Y puede cancelarla desde el mismo link
   await page.getByRole("button", { name: "Cancelar mi cita" }).click();
+  await page.getByRole("button", { name: "Sí, cancelar mi cita" }).click();
   await expect(page.getByText("Tu cita fue cancelada")).toBeVisible();
 });

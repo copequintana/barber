@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { Ban } from "lucide-react";
+import { Ban, CalendarX2, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { getAgendaData } from "@/lib/admin-appointments";
 import { requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
-import { WEEKDAYS_ES, minutesToHhmm } from "@/lib/time";
+import { WEEKDAYS_ES, longDateEs, minutesToHhmm } from "@/lib/time";
+import { cn } from "@/lib/utils";
 import { BarberJumpSelect, DateJumpInput } from "./nav-controls";
 
 export const metadata = { title: "Agenda · BarberDesk" };
@@ -12,15 +23,19 @@ export const metadata = { title: "Agenda · BarberDesk" };
 const PX_PER_MIN = 1.2;
 
 const STATUS_STYLE: Record<string, string> = {
-  confirmed:
-    "bg-emerald-100 border-emerald-300 text-emerald-900 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-200",
-  pending:
-    "bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200",
-  completed:
-    "bg-black/10 border-black/20 opacity-70 dark:bg-white/10 dark:border-white/20",
-  no_show:
-    "bg-red-100 border-red-300 text-red-900 dark:bg-red-950 dark:border-red-800 dark:text-red-200",
+  confirmed: "border-l-success bg-success-soft",
+  pending: "border-l-warning bg-warning-soft",
+  completed: "border-l-muted-foreground/50 bg-muted text-muted-foreground",
+  no_show: "border-l-danger bg-danger-soft",
 };
+
+const LEGEND = [
+  { label: "Confirmada", swatch: "border-l-4 border-l-success bg-success-soft" },
+  { label: "Pendiente", swatch: "border-l-4 border-l-warning bg-warning-soft" },
+  { label: "Completada", swatch: "border-l-4 border-l-muted-foreground/50 bg-muted" },
+  { label: "No asistió", swatch: "border-l-4 border-l-danger bg-danger-soft" },
+  { label: "Bloqueo", swatch: "border border-dashed border-muted-foreground/50 bg-muted" },
+];
 
 type Search = { date?: string; view?: string; barber?: string };
 
@@ -33,7 +48,8 @@ export default async function AgendaPage({
   const tenant = (await getTenantById(ctx.tenantId))!;
   const sp = await searchParams;
 
-  const today = DateTime.now().setZone(tenant.timezone).startOf("day");
+  const nowLocal = DateTime.now().setZone(tenant.timezone);
+  const today = nowLocal.startOf("day");
   let date = sp.date
     ? DateTime.fromISO(sp.date, { zone: tenant.timezone }).startOf("day")
     : today;
@@ -61,6 +77,7 @@ export default async function AgendaPage({
       ? data.barbers.map((b) => ({
           key: b.id,
           title: b.displayName,
+          initial: b.displayName.charAt(0).toUpperCase(),
           barberId: b.id,
           day: date,
         }))
@@ -69,6 +86,7 @@ export default async function AgendaPage({
           return {
             key: day.toISODate()!,
             title: `${WEEKDAYS_ES[day.weekday % 7].slice(0, 3)} ${day.day}`,
+            initial: null,
             barberId: weekBarber?.id ?? "",
             day,
           };
@@ -100,214 +118,341 @@ export default async function AgendaPage({
   const hourMarks: number[] = [];
   for (let m = minStart; m <= maxEnd; m += 60) hourMarks.push(m);
 
+  const nowMin = nowLocal.hour * 60 + nowLocal.minute;
+  const nowTop =
+    nowMin >= minStart && nowMin <= maxEnd ? (nowMin - minStart) * PX_PER_MIN : null;
+  const todayShown = columns.some((c) => c.day.hasSame(today, "day"));
+  const nowMs = nowLocal.toMillis();
+
+  const visible = data.appointments.filter((a) => barbersShown.has(a.barberId));
+  const counts = {
+    total: visible.length,
+    pending: visible.filter((a) => a.status === "pending").length,
+    completed: visible.filter((a) => a.status === "completed").length,
+    noShow: visible.filter((a) => a.status === "no_show").length,
+  };
+
   const dayISO = date.toISODate()!;
   const nav = (d: DateTime) =>
     `/admin/agenda?view=${view}&date=${d.toISODate()}${
       view === "week" && weekBarber ? `&barber=${weekBarber.id}` : ""
     }`;
   const step = view === "day" ? { days: 1 } : { days: 7 };
+  const stepLabel = view === "day" ? "día" : "semana";
+
+  const viewLink = (target: "day" | "week", label: string) => (
+    <Link
+      href={`/admin/agenda?view=${target}&date=${dayISO}${
+        target === "week" && weekBarber ? `&barber=${weekBarber.id}` : ""
+      }`}
+      aria-current={view === target ? "page" : undefined}
+      className={cn(
+        "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+        view === target
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+    </Link>
+  );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Agenda</h1>
-        <Link
-          href={`/admin/agenda/nueva?date=${dayISO}`}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
-        >
-          + Nueva cita
-        </Link>
-      </div>
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title="Agenda"
+        description={
+          view === "day"
+            ? longDateEs(date)
+            : `Semana del ${weekStart.setLocale("es").toFormat("d 'de' LLLL")}${
+                weekBarber ? ` · ${weekBarber.displayName}` : ""
+              }`
+        }
+        actions={
+          <Button asChild>
+            <Link href={`/admin/agenda/nueva?date=${dayISO}`}>
+              <Plus /> Nueva cita
+            </Link>
+          </Button>
+        }
+      />
 
-      <div className="flex flex-wrap items-center gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1">
-          <Link href={nav(date.minus(step))} className="rounded-md border border-black/15 px-2.5 py-1.5 dark:border-white/20">
-            ←
-          </Link>
-          <Link href={nav(today)} className="rounded-md border border-black/15 px-2.5 py-1.5 dark:border-white/20">
-            Hoy
-          </Link>
-          <Link href={nav(date.plus(step))} className="rounded-md border border-black/15 px-2.5 py-1.5 dark:border-white/20">
-            →
-          </Link>
+          <Button asChild variant="outline" size="icon" aria-label={`Ir al ${stepLabel} anterior`}>
+            <Link href={nav(date.minus(step))}>
+              <ChevronLeft />
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={nav(today)}>Hoy</Link>
+          </Button>
+          <Button asChild variant="outline" size="icon" aria-label={`Ir al ${stepLabel} siguiente`}>
+            <Link href={nav(date.plus(step))}>
+              <ChevronRight />
+            </Link>
+          </Button>
         </div>
         <DateJumpInput
           defaultValue={dayISO}
           view={view}
           barberId={view === "week" ? weekBarber?.id : undefined}
         />
-        <span className="font-medium capitalize">
-          {view === "day"
-            ? date.setLocale("es").toFormat("cccc d 'de' LLLL")
-            : `Semana del ${weekStart.setLocale("es").toFormat("d LLL")}`}
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <Link
-            href={`/admin/agenda?view=day&date=${dayISO}`}
-            className={view === "day" ? "font-semibold underline" : "opacity-70 hover:underline"}
-          >
-            Día
-          </Link>
-          <Link
-            href={`/admin/agenda?view=week&date=${dayISO}${weekBarber ? `&barber=${weekBarber.id}` : ""}`}
-            className={view === "week" ? "font-semibold underline" : "opacity-70 hover:underline"}
-          >
-            Semana
-          </Link>
-          {view === "week" ? (
-            <BarberJumpSelect
-              barbers={data.barbers}
-              defaultValue={weekBarber?.id}
-              dateISO={dayISO}
-            />
-          ) : null}
+        <div className="inline-flex rounded-lg border bg-card p-0.5" role="group" aria-label="Vista">
+          {viewLink("day", "Día")}
+          {viewLink("week", "Semana")}
         </div>
+        {view === "week" ? (
+          <BarberJumpSelect
+            barbers={data.barbers}
+            defaultValue={weekBarber?.id}
+            dateISO={dayISO}
+          />
+        ) : null}
+        {columns.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs sm:ml-auto">
+            <span className="rounded-full border bg-card px-2.5 py-1">
+              <strong className="tabular-nums">{counts.total}</strong>{" "}
+              {counts.total === 1 ? "cita" : "citas"}
+            </span>
+            {counts.pending > 0 ? (
+              <span className="rounded-full bg-warning-soft px-2.5 py-1 text-warning">
+                <strong className="tabular-nums">{counts.pending}</strong> por confirmar
+              </span>
+            ) : null}
+            <span className="rounded-full border bg-card px-2.5 py-1">
+              <strong className="tabular-nums">{counts.completed}</strong>{" "}
+              {counts.completed === 1 ? "completada" : "completadas"}
+            </span>
+            {counts.noShow > 0 ? (
+              <span className="rounded-full bg-danger-soft px-2.5 py-1 text-danger">
+                <strong className="tabular-nums">{counts.noShow}</strong> no asistió
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {columns.length === 0 ? (
-        <p className="text-sm opacity-70">
-          No hay barberos activos.{" "}
-          <Link href="/admin/barbers" className="underline">
-            Agrega uno
-          </Link>
-          .
-        </p>
+        <Empty className="border bg-card">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <CalendarX2 />
+            </EmptyMedia>
+            <EmptyTitle>No hay barberos activos</EmptyTitle>
+            <EmptyDescription>
+              La agenda muestra una columna por barbero. Agrega uno para empezar
+              a recibir citas.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button asChild>
+              <Link href="/admin/barbers">Agregar barbero</Link>
+            </Button>
+          </EmptyContent>
+        </Empty>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/15">
-          <div className="flex min-w-fit">
-            {/* Eje de horas */}
-            <div className="w-14 shrink-0 border-r border-black/10 dark:border-white/15">
-              <div className="h-10 border-b border-black/10 dark:border-white/15" />
-              <div className="relative" style={{ height: colHeight }}>
-                {hourMarks.map((m) => (
-                  <span
-                    key={m}
-                    className="absolute right-1 -translate-y-1/2 text-xs tabular-nums opacity-60"
-                    style={{ top: (m - minStart) * PX_PER_MIN }}
-                  >
-                    {minutesToHhmm(m)}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {columns.map((col) => {
-              const weekday = col.day.weekday % 7;
-              const franjas = data.workingHours.filter(
-                (w) => w.barberId === col.barberId && w.weekday === weekday,
-              );
-              const dayStart = col.day.startOf("day");
-              const dayEnd = dayStart.plus({ days: 1 });
-              const inCol = (s: Date, e: Date, barberId: string) =>
-                barberId === col.barberId &&
-                s.getTime() < dayEnd.toMillis() &&
-                e.getTime() > dayStart.toMillis();
-              const appts = data.appointments.filter((a) =>
-                inCol(a.startsAt, a.endsAt, a.barberId),
-              );
-              const offs = data.timeOff.filter((t) =>
-                inCol(t.startsAt, t.endsAt, t.barberId),
-              );
-              const top = (d: Date) =>
-                Math.max(0, (localMin(d) - minStart) * PX_PER_MIN);
-              const blockH = (s: Date, e: Date) =>
-                Math.max(
-                  18,
-                  ((e.getTime() - s.getTime()) / 60_000) * PX_PER_MIN,
-                );
-
-              return (
-                <div
-                  key={col.key}
-                  className="min-w-40 flex-1 border-r border-black/10 last:border-r-0 dark:border-white/15"
-                >
-                  <div className="flex h-10 items-center justify-between border-b border-black/10 px-2 text-sm font-medium dark:border-white/15">
-                    <span className="truncate">{col.title}</span>
-                    <Link
-                      href={`/admin/agenda/nueva?date=${col.day.toISODate()}&barber=${col.barberId}`}
-                      className="opacity-50 hover:opacity-100"
-                      aria-label="Nueva cita aquí"
+        <div className="overflow-hidden rounded-xl border bg-card shadow-card">
+          <div className="overflow-x-auto">
+            <div className="flex min-w-fit">
+              {/* Eje de horas */}
+              <div className="sticky left-0 z-30 w-14 shrink-0 border-r bg-card">
+                <div className="h-12 border-b" />
+                <div className="relative" style={{ height: colHeight }}>
+                  {hourMarks.map((m) => (
+                    <span
+                      key={m}
+                      className="absolute right-1.5 -translate-y-1/2 text-xs text-muted-foreground tabular-nums"
+                      style={{ top: (m - minStart) * PX_PER_MIN }}
                     >
-                      +
-                    </Link>
-                  </div>
-                  <div
-                    className="relative bg-black/[0.04] dark:bg-white/[0.04]"
-                    style={{ height: colHeight }}
-                  >
-                    {/* Franjas laborales (fondo claro) */}
-                    {franjas.map((f, i) => (
-                      <div
-                        key={i}
-                        className="absolute inset-x-0 bg-background"
-                        style={{
-                          top: (f.startMin - minStart) * PX_PER_MIN,
-                          height: (f.endMin - f.startMin) * PX_PER_MIN,
-                        }}
-                      />
-                    ))}
-                    {/* Líneas de hora */}
-                    {hourMarks.map((m) => (
-                      <div
-                        key={m}
-                        className="absolute inset-x-0 border-t border-black/5 dark:border-white/10"
-                        style={{ top: (m - minStart) * PX_PER_MIN }}
-                      />
-                    ))}
-                    {/* Bloqueos */}
-                    {offs.map((t) => (
-                      <div
-                        key={t.id}
-                        className="absolute inset-x-0.5 z-10 flex items-center gap-1 overflow-hidden rounded border border-black/20 bg-black/15 px-1.5 py-0.5 text-xs dark:border-white/25 dark:bg-white/15"
-                        style={{
-                          top: top(t.startsAt),
-                          height: blockH(t.startsAt, t.endsAt),
-                        }}
-                        title={t.reason ?? "Bloqueado"}
-                      >
-                        <Ban className="h-3 w-3 shrink-0" />
-                        {t.reason ?? "Bloqueado"}
-                      </div>
-                    ))}
-                    {/* Citas */}
-                    {appts.map((a) => (
-                      <Link
-                        key={a.id}
-                        href={`/admin/agenda/cita/${a.id}`}
-                        className={`absolute inset-x-0.5 z-20 overflow-hidden rounded border px-1.5 py-0.5 text-xs leading-tight hover:opacity-90 ${
-                          STATUS_STYLE[a.status] ?? STATUS_STYLE.confirmed
-                        }`}
-                        style={{
-                          top: top(a.startsAt),
-                          height: blockH(a.startsAt, a.endsAt),
-                        }}
-                        title={`${a.customerName} · ${a.serviceName}`}
-                      >
-                        <span className="font-semibold">
-                          {DateTime.fromJSDate(a.startsAt, { zone: "utc" })
-                            .setZone(tenant.timezone)
-                            .toFormat("HH:mm")}
-                        </span>{" "}
-                        {a.customerName}
-                        <span className="block truncate opacity-80">
-                          {a.serviceName}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
+                      {minutesToHhmm(m)}
+                    </span>
+                  ))}
+                  {todayShown && nowTop !== null ? (
+                    <span
+                      className="absolute right-1 z-10 -translate-y-1/2 rounded bg-now px-1 py-px text-[0.6875rem] font-semibold text-background tabular-nums"
+                      style={{ top: nowTop }}
+                    >
+                      {nowLocal.toFormat("HH:mm")}
+                    </span>
+                  ) : null}
                 </div>
-              );
-            })}
+              </div>
+
+              {columns.map((col) => {
+                const weekday = col.day.weekday % 7;
+                const franjas = data.workingHours.filter(
+                  (w) => w.barberId === col.barberId && w.weekday === weekday,
+                );
+                const dayStart = col.day.startOf("day");
+                const dayEnd = dayStart.plus({ days: 1 });
+                const inCol = (s: Date, e: Date, barberId: string) =>
+                  barberId === col.barberId &&
+                  s.getTime() < dayEnd.toMillis() &&
+                  e.getTime() > dayStart.toMillis();
+                const appts = data.appointments.filter((a) =>
+                  inCol(a.startsAt, a.endsAt, a.barberId),
+                );
+                const offs = data.timeOff.filter((t) =>
+                  inCol(t.startsAt, t.endsAt, t.barberId),
+                );
+                const top = (d: Date) =>
+                  Math.max(0, (localMin(d) - minStart) * PX_PER_MIN);
+                const blockH = (s: Date, e: Date) =>
+                  Math.max(
+                    22,
+                    ((e.getTime() - s.getTime()) / 60_000) * PX_PER_MIN,
+                  );
+                const isToday = col.day.hasSame(today, "day");
+
+                return (
+                  <div key={col.key} className="min-w-40 flex-1 border-r last:border-r-0">
+                    <div
+                      className={cn(
+                        "flex h-12 items-center justify-between gap-2 border-b px-2.5",
+                        isToday && view === "week" && "bg-primary/5",
+                      )}
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        {col.initial ? (
+                          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                            {col.initial}
+                          </span>
+                        ) : null}
+                        <span
+                          className={cn(
+                            "truncate text-sm font-medium capitalize",
+                            isToday && view === "week" && "text-primary",
+                          )}
+                        >
+                          {col.title}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-1">
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {appts.length}
+                        </span>
+                        <Button asChild variant="ghost" size="icon-sm" aria-label={`Nueva cita · ${col.title}`}>
+                          <Link
+                            href={`/admin/agenda/nueva?date=${col.day.toISODate()}&barber=${col.barberId}`}
+                          >
+                            <Plus />
+                          </Link>
+                        </Button>
+                      </span>
+                    </div>
+                    <div className="relative bg-muted/60" style={{ height: colHeight }}>
+                      {/* Franjas laborales (fondo claro) */}
+                      {franjas.map((f, i) => (
+                        <div
+                          key={i}
+                          className="absolute inset-x-0 bg-card"
+                          style={{
+                            top: (f.startMin - minStart) * PX_PER_MIN,
+                            height: (f.endMin - f.startMin) * PX_PER_MIN,
+                          }}
+                        />
+                      ))}
+                      {/* Líneas de hora */}
+                      {hourMarks.map((m) => (
+                        <div
+                          key={m}
+                          className="absolute inset-x-0 border-t border-border/70"
+                          style={{ top: (m - minStart) * PX_PER_MIN }}
+                        />
+                      ))}
+                      {/* Bloqueos */}
+                      {offs.map((t) => (
+                        <div
+                          key={t.id}
+                          className="absolute inset-x-1 z-10 flex items-start gap-1.5 overflow-hidden rounded-md border border-dashed border-muted-foreground/50 bg-muted px-2 py-1 text-xs text-muted-foreground"
+                          style={{
+                            top: top(t.startsAt),
+                            height: blockH(t.startsAt, t.endsAt),
+                          }}
+                          title={t.reason ?? "Bloqueado"}
+                        >
+                          <Ban className="mt-px size-3 shrink-0" />
+                          <span className="truncate">{t.reason ?? "Bloqueado"}</span>
+                        </div>
+                      ))}
+                      {/* Citas */}
+                      {appts.map((a) => {
+                        const past = a.endsAt.getTime() < nowMs;
+                        const unmarked =
+                          past && (a.status === "confirmed" || a.status === "pending");
+                        return (
+                          <Link
+                            key={a.id}
+                            href={`/admin/agenda/cita/${a.id}`}
+                            className={cn(
+                              "absolute inset-x-1 z-20 overflow-hidden rounded-md border-l-4 px-2 py-1 text-xs leading-tight transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring",
+                              STATUS_STYLE[a.status] ?? STATUS_STYLE.confirmed,
+                              past && "opacity-60 hover:opacity-100",
+                            )}
+                            style={{
+                              top: top(a.startsAt),
+                              height: blockH(a.startsAt, a.endsAt),
+                            }}
+                            title={`${a.customerName} · ${a.serviceName}${unmarked ? " · por marcar" : ""}`}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <span className="font-semibold tabular-nums">
+                                {DateTime.fromJSDate(a.startsAt, { zone: "utc" })
+                                  .setZone(tenant.timezone)
+                                  .toFormat("HH:mm")}
+                              </span>
+                              <span
+                                className={cn(
+                                  "truncate font-medium",
+                                  a.status === "no_show" && "line-through",
+                                )}
+                              >
+                                {a.customerName}
+                              </span>
+                            </span>
+                            <span className="block truncate text-muted-foreground">
+                              {unmarked ? (
+                                <span className="font-medium text-warning">Por marcar · </span>
+                              ) : null}
+                              {a.serviceName}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                      {isToday && nowTop !== null ? (
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute inset-x-0 z-30 h-0.5 bg-now"
+                          style={{ top: nowTop }}
+                        >
+                          <span className="absolute -top-[3px] -left-1 size-2 rounded-full bg-now" />
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
 
-      <p className="text-xs opacity-60">
-        Confirmada <span className="mx-1 inline-block h-2.5 w-2.5 rounded-sm bg-emerald-300 align-middle dark:bg-emerald-800" />
-        · Completada <span className="mx-1 inline-block h-2.5 w-2.5 rounded-sm bg-black/20 align-middle dark:bg-white/20" />
-        · No asistió <span className="mx-1 inline-block h-2.5 w-2.5 rounded-sm bg-red-300 align-middle dark:bg-red-800" />
-        · <Ban className="mx-1 inline h-3 w-3 align-middle" /> bloqueo. Las canceladas no se muestran.
-      </p>
+      {columns.length > 0 ? (
+        <ul className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+          {LEGEND.map((l) => (
+            <li key={l.label} className="flex items-center gap-1.5">
+              <span aria-hidden className={cn("inline-block h-3 w-4 rounded-sm", l.swatch)} />
+              {l.label}
+            </li>
+          ))}
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden className="inline-block h-0.5 w-4 bg-now" />
+            Ahora
+          </li>
+          <li>Las canceladas no se muestran.</li>
+        </ul>
+      ) : null}
     </div>
   );
 }

@@ -2,9 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { DateTimeInput } from "@/components/date-time-input";
-
-const inputClass =
-  "rounded-md border border-black/15 bg-transparent px-2 py-1.5 dark:border-white/20";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 
 /**
  * Selector de fecha que navega solo al elegir un día — reemplaza el
@@ -23,6 +21,7 @@ export function DateJumpInput({
   return (
     <DateTimeInput
       type="date"
+      aria-label="Ir a una fecha"
       defaultValue={defaultValue}
       onChange={(e) => {
         if (!e.target.value) return;
@@ -30,7 +29,7 @@ export function DateJumpInput({
         if (barberId) params.set("barber", barberId);
         router.push(`/admin/agenda?${params}`);
       }}
-      className={inputClass}
+      className="h-9 rounded-lg border border-input bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
     />
   );
 }
@@ -48,7 +47,8 @@ export function BarberJumpSelect({
 }) {
   const router = useRouter();
   return (
-    <select
+    <NativeSelect
+      aria-label="Barbero"
       defaultValue={defaultValue}
       onChange={(e) => {
         const params = new URLSearchParams({
@@ -58,13 +58,12 @@ export function BarberJumpSelect({
         });
         router.push(`/admin/agenda?${params}`);
       }}
-      className={inputClass}
     >
       {barbers.map((b) => (
-        <option key={b.id} value={b.id}>
+        <NativeSelectOption key={b.id} value={b.id}>
           {b.displayName}
-        </option>
+        </NativeSelectOption>
       ))}
-    </select>
+    </NativeSelect>
   );
 }

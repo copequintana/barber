@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { DirectoryList } from "@/components/directory-list";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/auth";
 
 export const metadata = {
@@ -18,43 +19,36 @@ export default async function HomePage() {
   const session = await getSession();
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-lg flex-col gap-8 px-6 py-10">
-      <div className="absolute right-6 top-6">
-        <ThemeToggle />
-      </div>
+    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-8 px-4 py-5 sm:px-6">
+      <header className="flex items-center justify-between gap-3">
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/logo-mark.png" alt="" width={28} height={28} />
+          <span className="font-semibold tracking-tight">BarberDesk</span>
+        </Link>
+        <div className="flex items-center gap-1">
+          <Button asChild variant="ghost" size="sm">
+            {session?.user ? (
+              <Link href="/select-tenant">Mis barberías</Link>
+            ) : (
+              <Link href="/login">Tengo una barbería</Link>
+            )}
+          </Button>
+          <ThemeToggle />
+        </div>
+      </header>
 
-      <div className="flex flex-col items-center gap-3 text-center">
-        <Image
-          src="/logo-mark-hero.png"
-          alt="BarberDesk"
-          width={125}
-          height={88}
-          priority
-          className="rounded-xl shadow-md"
-        />
-        <p className="text-sm font-semibold uppercase tracking-wide opacity-60">
-          BarberDesk
+      <section className="flex flex-col gap-2 pt-2">
+        <p className="text-sm font-medium text-primary">Reserva en línea, sin llamadas</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          Encuentra tu barbería y aparta tu lugar
+        </h1>
+        <p className="text-muted-foreground">
+          Si tu navegador te pide tu ubicación, acéptala y verás primero las
+          que te quedan más cerca.
         </p>
-        <h1 className="text-3xl font-bold sm:text-4xl">Barberías cerca de ti</h1>
-        <p className="text-sm opacity-70">
-          Si tu navegador te pide tu ubicación, acéptala para ordenar por
-          cercanía.
-        </p>
-      </div>
+      </section>
 
       <DirectoryList />
-
-      <div className="mt-4 border-t border-black/10 pt-4 text-sm dark:border-white/15">
-        {session?.user ? (
-          <Link href="/select-tenant" className="underline opacity-70">
-            Ir a mis barberías →
-          </Link>
-        ) : (
-          <Link href="/login" className="underline opacity-50">
-            ¿Tienes una cuenta de barbería? Entra
-          </Link>
-        )}
-      </div>
     </main>
   );
 }

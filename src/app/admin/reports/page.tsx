@@ -1,9 +1,30 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
+import { Download, TrendingDown, TrendingUp } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
 import { DateTimeInput } from "@/components/date-time-input";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { requireTenantRole } from "@/lib/guards";
 import { getReport } from "@/lib/reports";
+import { formatMoney } from "@/lib/money";
 import { getTenantById } from "@/lib/tenancy";
+import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Reportes · BarberDesk" };
 
@@ -11,12 +32,29 @@ function pct(v: number | null): string {
   return v === null ? "—" : `${Math.round(v * 100)}%`;
 }
 
-function delta(current: number, previous: number): string | null {
+function change(current: number, previous: number): number | null {
   if (previous === 0) return null;
-  const d = (current - previous) / previous;
-  const sign = d >= 0 ? "+" : "";
-  return `${sign}${Math.round(d * 100)}% vs período anterior`;
+  return (current - previous) / previous;
 }
+
+function Trend({ value, lowerIsBetter = false }: { value: number | null; lowerIsBetter?: boolean }) {
+  if (value === null) {
+    return <span className="text-xs text-muted-foreground">Sin datos del periodo anterior</span>;
+  }
+  const up = value >= 0;
+  const good = lowerIsBetter ? !up : up;
+  const Icon = up ? TrendingUp : TrendingDown;
+  return (
+    <span className={cn("inline-flex items-center gap-1 text-xs font-medium", good ? "text-success" : "text-danger")}>
+      <Icon className="size-3.5" />
+      {up ? "+" : ""}
+      {Math.round(value * 100)}% vs periodo anterior
+    </span>
+  );
+}
+
+const inputClass =
+  "h-9 rounded-lg border border-input bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export default async function ReportsPage({
   searchParams,
@@ -55,168 +93,200 @@ export default async function ReportsPage({
   ];
   if (!report) return null;
 
-  const money = new Intl.NumberFormat("es", {
-    style: "currency",
-    currency: tenant.currency,
-    maximumFractionDigits: 0,
-  });
+  const money = (amount: number) => formatMoney(amount, tenant.currency);
+  const sameYear = from.year === to.year;
+  const rangeLabel = `Del ${from.setLocale("es").toFormat(sameYear ? "d 'de' LLLL" : "d 'de' LLLL yyyy")} al ${to.setLocale("es").toFormat("d 'de' LLLL yyyy")}`;
 
-  const quick = (label: string, f: DateTime, t: DateTime) => (
-    <Link
-      href={`/admin/reports?from=${f.toISODate()}&to=${t.toISODate()}`}
-      className="rounded-full border border-black/15 px-3 py-1 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
-    >
-      {label}
-    </Link>
-  );
+  const quickRanges = [
+    { label: "Este mes", from: today.startOf("month"), to: today },
+    {
+      label: "Mes pasado",
+      from: today.minus({ months: 1 }).startOf("month"),
+      to: today.minus({ months: 1 }).endOf("month"),
+    },
+    { label: "Últimos 30 días", from: today.minus({ days: 29 }), to: today },
+  ];
 
   const cards = [
     {
-      label: "Citas (sin canceladas)",
+      label: "Citas",
       value: String(report.totals.citas),
-      sub: prev ? delta(report.totals.citas, prev.totals.citas) : null,
+      hint: "Sin contar canceladas",
+      trend: prev ? <Trend value={change(report.totals.citas, prev.totals.citas)} /> : null,
     },
     {
       label: "Completadas",
       value: String(report.totals.completadas),
-      sub: prev ? delta(report.totals.completadas, prev.totals.completadas) : null,
+      hint: `${report.totals.noShows} no asistió`,
+      trend: prev ? <Trend value={change(report.totals.completadas, prev.totals.completadas)} /> : null,
     },
     {
-      label: "Ingresos (completadas)",
-      value: money.format(report.totals.ingresos),
-      sub: prev ? delta(report.totals.ingresos, prev.totals.ingresos) : null,
+      label: "Ingresos",
+      value: money(report.totals.ingresos),
+      hint: "Solo citas completadas",
+      trend: prev ? <Trend value={change(report.totals.ingresos, prev.totals.ingresos)} /> : null,
     },
     {
       label: "Tasa de no-show",
       value: pct(report.totals.noShowRate),
-      sub:
-        prev?.totals.noShowRate != null && report.totals.noShowRate != null
-          ? `antes: ${pct(prev.totals.noShowRate)}`
-          : null,
+      hint:
+        prev?.totals.noShowRate != null
+          ? `Antes: ${pct(prev.totals.noShowRate)}`
+          : "Faltas entre citas terminadas",
+      trend:
+        prev?.totals.noShowRate != null && report.totals.noShowRate != null ? (
+          <Trend
+            value={
+              prev.totals.noShowRate === 0
+                ? null
+                : change(report.totals.noShowRate, prev.totals.noShowRate)
+            }
+            lowerIsBetter
+          />
+        ) : null,
     },
   ];
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Reportes</h1>
-        <a
-          href={`/admin/reports/csv?from=${fromISO}&to=${toISO}`}
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium dark:border-white/20"
-        >
-          Exportar CSV
-        </a>
-      </div>
+      <PageHeader
+        title="Reportes"
+        description={rangeLabel}
+        actions={
+          <Button asChild variant="outline">
+            <a href={`/admin/reports/csv?from=${fromISO}&to=${toISO}`}>
+              <Download /> Exportar CSV
+            </a>
+          </Button>
+        }
+      />
 
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        {quick("Este mes", today.startOf("month"), today)}
-        {quick(
-          "Mes pasado",
-          today.minus({ months: 1 }).startOf("month"),
-          today.minus({ months: 1 }).endOf("month"),
-        )}
-        {quick("Últimos 30 días", today.minus({ days: 29 }), today)}
-        <form method="get" action="/admin/reports" className="flex items-center gap-2">
-          <DateTimeInput
-            type="date"
-            name="from"
-            defaultValue={fromISO}
-            className="rounded-md border border-black/15 bg-transparent px-2 py-1 dark:border-white/20"
-          />
-          <span className="opacity-60">→</span>
-          <DateTimeInput
-            type="date"
-            name="to"
-            defaultValue={toISO}
-            className="rounded-md border border-black/15 bg-transparent px-2 py-1 dark:border-white/20"
-          />
-          <button type="submit" className="underline opacity-70">
-            Aplicar
-          </button>
-        </form>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-lg border border-black/10 p-4 dark:border-white/15"
-          >
-            <p className="text-2xl font-bold tabular-nums">{c.value}</p>
-            <p className="text-sm opacity-70">{c.label}</p>
-            {c.sub ? <p className="mt-1 text-xs opacity-60">{c.sub}</p> : null}
+      <Card size="sm">
+        <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Periodo</span>
+            <div className="flex flex-wrap gap-2">
+              {quickRanges.map((r, i) => {
+                const active =
+                  quickRanges.findIndex(
+                    (q) => q.from.toISODate() === fromISO && q.to.toISODate() === toISO,
+                  ) === i;
+                return (
+                  <Button key={r.label} asChild size="sm" variant={active ? "default" : "outline"}>
+                    <Link
+                      href={`/admin/reports?from=${r.from.toISODate()}&to=${r.to.toISODate()}`}
+                      aria-current={active ? "true" : undefined}
+                    >
+                      {r.label}
+                    </Link>
+                  </Button>
+                );
+              })}
+            </div>
           </div>
+          <form method="get" action="/admin/reports" className="flex flex-wrap items-end gap-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="from">Desde</Label>
+              <DateTimeInput id="from" type="date" name="from" defaultValue={fromISO} className={inputClass} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="to">Hasta</Label>
+              <DateTimeInput id="to" type="date" name="to" defaultValue={toISO} className={inputClass} />
+            </div>
+            <Button type="submit" variant="secondary">
+              Aplicar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {cards.map((c) => (
+          <Card key={c.label} size="sm">
+            <CardContent className="flex flex-col gap-1">
+              <p className="text-sm text-muted-foreground">{c.label}</p>
+              <p className="text-2xl font-semibold tabular-nums">{c.value}</p>
+              <p className="text-xs text-muted-foreground">{c.hint}</p>
+              {c.trend}
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      <p className="text-sm opacity-70">
-        Canceladas: {report.totals.canceladas} (
-        {report.totals.canceladasPorCliente} por el cliente,{" "}
-        {report.totals.canceladas - report.totals.canceladasPorCliente} por la
-        barbería).
+      <p className="text-sm text-muted-foreground">
+        Canceladas en el periodo: {report.totals.canceladas} ({report.totals.canceladasPorCliente} por
+        el cliente, {report.totals.canceladas - report.totals.canceladasPorCliente} por la barbería).
       </p>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Ocupación por barbero</h2>
-        <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/15">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-black/10 text-left dark:border-white/15">
-                <th className="px-4 py-2 font-medium">Barbero</th>
-                <th className="px-4 py-2 font-medium">Citas</th>
-                <th className="px-4 py-2 font-medium">Horas reservadas</th>
-                <th className="px-4 py-2 font-medium">Horas disponibles</th>
-                <th className="px-4 py-2 font-medium">Ocupación</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.porBarbero.map((b) => (
-                <tr key={b.barberId} className="border-b border-black/5 last:border-b-0 dark:border-white/10">
-                  <td className="px-4 py-2">{b.nombre}</td>
-                  <td className="px-4 py-2 tabular-nums">{b.citas}</td>
-                  <td className="px-4 py-2 tabular-nums">
-                    {(b.reservadoMin / 60).toFixed(1)} h
-                  </td>
-                  <td className="px-4 py-2 tabular-nums">
-                    {(b.disponibleMin / 60).toFixed(1)} h
-                  </td>
-                  <td className="px-4 py-2 tabular-nums">{pct(b.ocupacion)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Servicios más pedidos</h2>
-        {report.topServicios.length === 0 ? (
-          <p className="text-sm opacity-70">Sin citas en el rango.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/15">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-black/10 text-left dark:border-white/15">
-                  <th className="px-4 py-2 font-medium">Servicio</th>
-                  <th className="px-4 py-2 font-medium">Citas</th>
-                  <th className="px-4 py-2 font-medium">Ingresos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.topServicios.map((s) => (
-                  <tr key={s.serviceId} className="border-b border-black/5 last:border-b-0 dark:border-white/10">
-                    <td className="px-4 py-2">{s.nombre}</td>
-                    <td className="px-4 py-2 tabular-nums">{s.citas}</td>
-                    <td className="px-4 py-2 tabular-nums">
-                      {money.format(s.ingresos)}
-                    </td>
-                  </tr>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Ocupación por barbero</CardTitle>
+            <CardDescription>Horas reservadas contra horas de su horario en el periodo.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Barbero</TableHead>
+                  <TableHead className="text-right">Citas</TableHead>
+                  <TableHead className="text-right">Reservadas</TableHead>
+                  <TableHead className="text-right">Disponibles</TableHead>
+                  <TableHead className="text-right">Ocupación</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {report.porBarbero.map((b) => (
+                  <TableRow key={b.barberId}>
+                    <TableCell className="font-medium">{b.nombre}</TableCell>
+                    <TableCell className="text-right tabular-nums">{b.citas}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {(b.reservadoMin / 60).toFixed(1)} h
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {(b.disponibleMin / 60).toFixed(1)} h
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {pct(b.ocupacion)}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Servicios más pedidos</CardTitle>
+            <CardDescription>Ingresos de las citas completadas de cada servicio.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {report.topServicios.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sin citas en el periodo.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Servicio</TableHead>
+                    <TableHead className="text-right">Citas</TableHead>
+                    <TableHead className="text-right">Ingresos</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {report.topServicios.map((s) => (
+                    <TableRow key={s.serviceId}>
+                      <TableCell className="font-medium">{s.nombre}</TableCell>
+                      <TableCell className="text-right tabular-nums">{s.citas}</TableCell>
+                      <TableCell className="text-right tabular-nums">{money(s.ingresos)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

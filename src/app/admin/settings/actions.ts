@@ -6,6 +6,7 @@ import { del } from "@vercel/blob";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
+import { isThemeId } from "@/lib/themes";
 
 function fail(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
@@ -24,7 +25,9 @@ const profileSchema = z.object({
   brandColor: z
     .string()
     .trim()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Color inválido"),
+    .regex(/^#[0-9a-fA-F]{6}$/, "Color inválido")
+    .nullable(),
+  theme: z.string().refine(isThemeId, "Tema inválido"),
   phone: z.union([z.literal(""), z.string().trim().max(30)]),
   address: z.union([z.literal(""), z.string().trim().max(200)]),
 });
@@ -34,7 +37,9 @@ export async function updateProfile(formData: FormData) {
   const path = "/admin/settings";
 
   const parsed = profileSchema.safeParse({
-    brandColor: formData.get("brandColor"),
+    brandColor:
+      formData.get("useThemeColor") === "on" ? null : formData.get("brandColor"),
+    theme: formData.get("theme"),
     phone: formData.get("phone") ?? "",
     address: formData.get("address") ?? "",
   });
@@ -52,6 +57,7 @@ export async function updateProfile(formData: FormData) {
     where: { id: ctx.tenantId },
     data: {
       brandColor: data.brandColor,
+      theme: data.theme,
       phone: data.phone || null,
       address: data.address || null,
       reminder24hEnabled,
@@ -63,6 +69,90 @@ export async function updateProfile(formData: FormData) {
 
   revalidateTenantPublicPaths(tenant.slug);
   redirect(`${path}?ok=1`);
+}
+
+type SettingsTab = "pagina" | "contacto" | "recordatorios";
+
+function tabPath(tab: SettingsTab) {
+  return `/admin/settings?tab=${tab}`;
+}
+
+function failTab(tab: SettingsTab, message: string): never {
+  redirect(`${tabPath(tab)}&error=${encodeURIComponent(message)}`);
+}
+
+const appearanceSchema = profileSchema.pick({ brandColor: true, theme: true });
+
+export async function updateAppearance(formData: FormData) {
+  const ctx = await requireTenantRole("owner", "admin");
+
+  const parsed = appearanceSchema.safeParse({
+    brandColor:
+      formData.get("useThemeColor") === "on" ? null : formData.get("brandColor"),
+    theme: formData.get("theme"),
+  });
+  if (!parsed.success) failTab("pagina", parsed.error.issues[0].message);
+
+  const tenant = await prisma.tenant.update({
+    where: { id: ctx.tenantId },
+    data: { brandColor: parsed.data.brandColor, theme: parsed.data.theme },
+    select: { slug: true },
+  });
+
+  revalidateTenantPublicPaths(tenant.slug);
+  redirect(`${tabPath("pagina")}&ok=1`);
+}
+
+const contactSchema = profileSchema.pick({ phone: true, address: true }).extend({
+  lat: z.coerce.number().gte(-90).lte(90).optional(),
+  lng: z.coerce.number().gte(-180).lte(180).optional(),
+});
+
+export async function updateContact(formData: FormData) {
+  const ctx = await requireTenantRole("owner", "admin");
+
+  const lat = formData.get("lat");
+  const lng = formData.get("lng");
+  const parsed = contactSchema.safeParse({
+    phone: formData.get("phone") ?? "",
+    address: formData.get("address") ?? "",
+    lat: lat ? lat : undefined,
+    lng: lng ? lng : undefined,
+  });
+  if (!parsed.success) failTab("contacto", parsed.error.issues[0].message);
+  const data = parsed.data;
+  const location =
+    data.lat !== undefined && data.lng !== undefined ? { lat: data.lat, lng: data.lng } : {};
+
+  const tenant = await prisma.tenant.update({
+    where: { id: ctx.tenantId },
+    data: {
+      phone: data.phone || null,
+      address: data.address || null,
+      ...location,
+    },
+    select: { slug: true },
+  });
+
+  revalidateTenantPublicPaths(tenant.slug);
+  redirect(`${tabPath("contacto")}&ok=1`);
+}
+
+export async function updateReminders(formData: FormData) {
+  const ctx = await requireTenantRole("owner", "admin");
+
+  const tenant = await prisma.tenant.update({
+    where: { id: ctx.tenantId },
+    data: {
+      reminder24hEnabled: formData.get("reminder24hEnabled") === "on",
+      reminder2hEnabled: formData.get("reminder2hEnabled") === "on",
+      whatsappEnabled: formData.get("whatsappEnabled") === "on",
+    },
+    select: { slug: true },
+  });
+
+  revalidateTenantPublicPaths(tenant.slug);
+  redirect(`${tabPath("recordatorios")}&ok=1`);
 }
 
 /**

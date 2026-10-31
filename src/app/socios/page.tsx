@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BarChart3, CalendarDays, Clock, Link2 } from "lucide-react";
+import { BarChart3, CalendarDays, Clock, Link2, Palette, Smartphone } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/auth";
 import { signupEnabled } from "@/lib/flags";
 
@@ -10,9 +11,6 @@ export const metadata = {
   description: "Agenda de barbería, sin llamadas ni WhatsApp perdido.",
 };
 
-const primaryBtn =
-  "rounded-md bg-accent px-6 py-3 font-medium text-accent-foreground";
-
 const FEATURES = [
   {
     icon: Link2,
@@ -20,19 +18,29 @@ const FEATURES = [
     body: "Un link para Instagram o WhatsApp: tus clientes reservan solos, sin llamarte.",
   },
   {
+    icon: Palette,
+    title: "Con tu estilo",
+    body: "Elige entre ocho temas y tu color de marca para que la página se vea como tu local.",
+  },
+  {
     icon: CalendarDays,
     title: "Agenda multi-barbero",
-    body: "Cada barbero ve su día desde el celular; tú ves todo el negocio.",
+    body: "Tú ves todo el negocio por día o por semana; mueves y cancelas citas en segundos.",
+  },
+  {
+    icon: Smartphone,
+    title: "Cada barbero, su día",
+    body: "Desde el celular ve sus citas, llama o escribe al cliente y marca cómo salió cada una.",
   },
   {
     icon: Clock,
     title: "Recordatorios automáticos",
-    body: "Email horas antes de la cita, sin que tengas que acordarte de avisar.",
+    body: "Avisos antes de la cita para que tus clientes no se olviden y bajen las faltas.",
   },
   {
     icon: BarChart3,
     title: "Reportes al día",
-    body: "Ingresos y citas por barbero, exportables a CSV cuando quieras.",
+    body: "Ingresos, ocupación y servicios más pedidos, exportables a CSV cuando quieras.",
   },
 ];
 
@@ -45,54 +53,64 @@ export default async function SociosPage() {
   const session = await getSession();
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col gap-16 px-6 py-16">
-      <div className="absolute right-6 top-6">
-        <ThemeToggle />
-      </div>
-
-      <section className="flex flex-col items-center gap-6 text-center">
-        <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide opacity-60">
-          <Image src="/logo-mark.png" alt="" width={20} height={20} /> BarberDesk
-        </p>
-        <h1 className="text-4xl font-bold sm:text-5xl">
-          Agenda de barbería, sin llamadas ni WhatsApp perdido
-        </h1>
-        <p className="max-w-xl text-lg opacity-70">
-          Una página de reservas propia, agenda multi-barbero y recordatorios
-          automáticos — para que tus clientes reserven solos y no se te
-          olvide avisarles.
-        </p>
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
-          {session?.user ? (
-            <Link href="/select-tenant" className={primaryBtn}>
-              Ir a mis barberías
+    <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-14 px-4 py-5 sm:px-6">
+      <header className="flex items-center justify-between gap-3">
+        <span className="flex items-center gap-2">
+          <Image src="/logo-mark.png" alt="" width={28} height={28} />
+          <span className="font-semibold tracking-tight">BarberDesk</span>
+        </span>
+        <div className="flex items-center gap-1">
+          <Button asChild variant="ghost" size="sm">
+            <Link href={session?.user ? "/select-tenant" : "/login"}>
+              {session?.user ? "Mis barberías" : "Entrar"}
             </Link>
+          </Button>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <section className="flex flex-col items-start gap-5 pt-6">
+        <p className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+          Para dueños de barbería
+        </p>
+        <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+          Tu agenda de barbería, sin llamadas ni WhatsApp perdido
+        </h1>
+        <p className="max-w-xl text-lg text-muted-foreground">
+          Una página de reservas propia, agenda para todo tu equipo y
+          recordatorios automáticos. Tus clientes reservan solos y tú te
+          dedicas a cortar.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {session?.user ? (
+            <Button asChild size="lg">
+              <Link href="/select-tenant">Ir a mis barberías</Link>
+            </Button>
           ) : signupEnabled ? (
             <>
-              <Link href="/signup" className={primaryBtn}>
-                Crea tu barbería gratis
-              </Link>
-              <Link href="/login" className="text-sm underline opacity-70">
-                Ya tengo cuenta
-              </Link>
+              <Button asChild size="lg">
+                <Link href="/signup">Crea tu barbería gratis</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/login">Ya tengo cuenta</Link>
+              </Button>
             </>
           ) : (
-            <Link href="/login" className={primaryBtn}>
-              Entrar
-            </Link>
+            <Button asChild size="lg">
+              <Link href="/login">Entrar</Link>
+            </Button>
           )}
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section className="grid gap-4 pb-10 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="flex flex-col gap-1.5 rounded-lg border border-black/10 p-5 dark:border-white/15"
-          >
-            <f.icon className="h-6 w-6 text-accent" />
+          <div key={f.title} className="flex flex-col gap-2 rounded-xl border bg-card p-5 shadow-card">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <f.icon className="size-5" />
+            </span>
             <p className="font-semibold">{f.title}</p>
-            <p className="text-sm opacity-70">{f.body}</p>
+            <p className="text-sm text-muted-foreground">{f.body}</p>
           </div>
         ))}
       </section>

@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AuthError } from "@/components/auth-shell";
+import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth-client";
 
 export function SignupForm() {
@@ -32,55 +37,46 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <label className="text-sm font-medium" htmlFor="name">
-        Nombre
-      </label>
-      <input
-        id="name"
-        name="name"
-        type="text"
-        required
-        autoComplete="name"
-        placeholder="Tu nombre"
-        className="rounded-md border border-black/15 bg-transparent px-3 py-2 dark:border-white/20"
-      />
-      <label className="text-sm font-medium" htmlFor="email">
-        Email
-      </label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        required
-        autoComplete="email"
-        placeholder="tu@correo.com"
-        className="rounded-md border border-black/15 bg-transparent px-3 py-2 dark:border-white/20"
-      />
-      <label className="text-sm font-medium" htmlFor="password">
-        Contraseña (mínimo 8 caracteres)
-      </label>
-      <input
-        id="password"
-        name="password"
-        type="password"
-        required
-        minLength={8}
-        autoComplete="new-password"
-        className="rounded-md border border-black/15 bg-transparent px-3 py-2 dark:border-white/20"
-      />
-      {error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          {error}
-        </p>
-      ) : null}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground disabled:opacity-60"
-      >
-        {submitting ? "Creando cuenta…" : "Crear cuenta"}
-      </button>
+    <form onSubmit={handleSubmit}>
+      <FieldGroup className="gap-4">
+        <Field>
+          <FieldLabel htmlFor="name">Nombre</FieldLabel>
+          <Input id="name" name="name" type="text" required autoComplete="name" placeholder="Tu nombre" />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="tu@correo.com"
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="password">Contraseña</FieldLabel>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+          />
+          <FieldDescription>Mínimo 8 caracteres.</FieldDescription>
+        </Field>
+        {error ? <AuthError>{error}</AuthError> : null}
+        <Button type="submit" size="lg" disabled={submitting} className="w-full">
+          {submitting ? (
+            <>
+              <Spinner /> Creando cuenta…
+            </>
+          ) : (
+            "Crear cuenta"
+          )}
+        </Button>
+      </FieldGroup>
     </form>
   );
 }

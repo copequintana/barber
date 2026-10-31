@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AuthError } from "@/components/auth-shell";
+import { Notice } from "@/components/notice";
+import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth-client";
-
-const inputClass =
-  "rounded-md border border-black/15 bg-transparent px-3 py-2 dark:border-white/20";
 
 /** Sin token: pide el email para mandar el link. Con token (link del correo): pide la contraseña nueva. */
 export function ResetPasswordForm({ token }: { token?: string }) {
@@ -32,35 +35,37 @@ function RequestLinkForm() {
 
   if (sent) {
     return (
-      <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+      <Notice tone="success">
         Si ese correo tiene una cuenta, te llegará un link para elegir
         contraseña.
-      </p>
+      </Notice>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <h1 className="text-xl font-bold">Restablecer contraseña</h1>
-      <label className="text-sm font-medium" htmlFor="email">
-        Email
-      </label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        required
-        autoComplete="email"
-        placeholder="tu@correo.com"
-        className={inputClass}
-      />
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground disabled:opacity-60"
-      >
-        {submitting ? "Enviando…" : "Mandar link"}
-      </button>
+    <form onSubmit={handleSubmit}>
+      <FieldGroup className="gap-4">
+        <Field>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="tu@correo.com"
+          />
+        </Field>
+        <Button type="submit" size="lg" disabled={submitting} className="w-full">
+          {submitting ? (
+            <>
+              <Spinner /> Enviando…
+            </>
+          ) : (
+            "Mandar link"
+          )}
+        </Button>
+      </FieldGroup>
     </form>
   );
 }
@@ -96,44 +101,42 @@ function SetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <h1 className="text-xl font-bold">Elige tu contraseña</h1>
-      <label className="text-sm font-medium" htmlFor="password">
-        Contraseña nueva (mínimo 8 caracteres)
-      </label>
-      <input
-        id="password"
-        name="password"
-        type="password"
-        required
-        minLength={8}
-        autoComplete="new-password"
-        className={inputClass}
-      />
-      <label className="text-sm font-medium" htmlFor="confirm">
-        Repite la contraseña
-      </label>
-      <input
-        id="confirm"
-        name="confirm"
-        type="password"
-        required
-        minLength={8}
-        autoComplete="new-password"
-        className={inputClass}
-      />
-      {error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          {error}
-        </p>
-      ) : null}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground disabled:opacity-60"
-      >
-        {submitting ? "Guardando…" : "Guardar contraseña"}
-      </button>
+    <form onSubmit={handleSubmit}>
+      <FieldGroup className="gap-4">
+        <Field>
+          <FieldLabel htmlFor="password">Contraseña nueva</FieldLabel>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+          />
+          <FieldDescription>Mínimo 8 caracteres.</FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="confirm">Repite la contraseña</FieldLabel>
+          <Input
+            id="confirm"
+            name="confirm"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+          />
+        </Field>
+        {error ? <AuthError>{error}</AuthError> : null}
+        <Button type="submit" size="lg" disabled={submitting} className="w-full">
+          {submitting ? (
+            <>
+              <Spinner /> Guardando…
+            </>
+          ) : (
+            "Guardar contraseña"
+          )}
+        </Button>
+      </FieldGroup>
     </form>
   );
 }

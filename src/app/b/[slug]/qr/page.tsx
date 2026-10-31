@@ -38,34 +38,30 @@ export default async function TenantQrPage({ params }: Props) {
   });
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-6 px-6 py-10 text-center">
-      <div className="flex items-center gap-3">
+    <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center gap-6 px-6 py-10 text-center">
+      <div className="flex flex-col items-center gap-3">
         {tenant.logoUrl ? (
           <FallbackImage
             src={tenant.logoUrl}
             alt=""
-            className="h-12 w-12 shrink-0 rounded-full border border-black/10 object-cover dark:border-white/15"
+            className="size-14 shrink-0 rounded-full object-cover ring-2 ring-ornament/50"
           />
         ) : null}
-        <h1
-          className="text-2xl font-bold"
-          style={{ color: tenant.brandColor ?? undefined }}
-        >
-          {tenant.name}
-        </h1>
+        <p className="eyebrow">Reserva en línea</p>
+        <h1 className="title-xl">{tenant.name}</h1>
       </div>
 
       <div
-        className="rounded-2xl border-4 p-4"
-        style={{ borderColor: tenant.brandColor ?? "var(--brand)" }}
+        className="w-full max-w-xs rounded-2xl border-4 bg-white p-3 [&>svg]:h-auto [&>svg]:w-full"
+        style={{ borderColor: "var(--brand)" }}
         // El SVG lo genera el servidor a partir del slug del propio tenant
         // (no es contenido de un usuario): es seguro embeberlo directo.
         dangerouslySetInnerHTML={{ __html: svg }}
       />
 
-      <div>
-        <p className="text-sm opacity-70">Escanea para reservar tu cita</p>
-        <a href={publicUrl} className="break-all text-xs underline opacity-50">
+      <div className="flex flex-col gap-1">
+        <p className="title-sm">Escanea para reservar tu cita</p>
+        <a href={publicUrl} className="font-num break-all text-xs text-muted-foreground underline">
           {publicUrl}
         </a>
       </div>

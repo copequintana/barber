@@ -1,48 +1,158 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { DateTime } from "luxon";
-import { Ban, Check, Phone, StickyNote } from "lucide-react";
-import { DateTimeInput } from "@/components/date-time-input";
-import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Ban,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+  Phone,
+  StickyNote,
+  X,
+} from "lucide-react";
+import { FlashToast } from "@/components/admin/flash-toast";
+import { StatusBadge } from "@/components/admin/status-badge";
+import { SubmitButton } from "@/components/admin/submit-button";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { Notice } from "@/components/notice";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { signOut } from "@/lib/auth";
 import { getBarberDay, getOwnBarber } from "@/lib/barber-panel";
 import { ACTIVE_TENANT_COOKIE, requireTenantRole } from "@/lib/guards";
+import { formatMoney } from "@/lib/money";
 import { getTenantById } from "@/lib/tenancy";
-import { blockSlot, markOutcome, removeTimeOff } from "./actions";
+import { longDateEs } from "@/lib/time";
+import { cn } from "@/lib/utils";
+import { markOutcome, removeTimeOff } from "./actions";
+import { BarberMenu } from "./barber-menu";
+import { BlockSlotSheet } from "./block-slot-sheet";
 import { DateJumpInput } from "./date-jump";
 
 export const metadata = { title: "Mi día · BarberDesk" };
 
-const inputClass =
-  "rounded-md border border-black/15 bg-transparent px-3 py-2 text-sm dark:border-white/20";
+type DayData = NonNullable<Awaited<ReturnType<typeof getBarberDay>>>;
+type Appointment = DayData["appointments"][number];
 
-const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
-  confirmed: {
-    label: "Confirmada",
-    cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  },
-  pending: {
-    label: "Pendiente",
-    cls: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  },
-  completed: {
-    label: "Completada",
-    cls: "bg-black/10 opacity-70 dark:bg-white/15",
-  },
-  no_show: {
-    label: "No asistió",
-    cls: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
-  },
-};
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="px-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+      {children}
+    </h2>
+  );
+}
+
+function isOpen(a: Appointment) {
+  return a.status === "confirmed" || a.status === "pending";
+}
+
+function zonedTime(d: Date, timezone: string) {
+  return DateTime.fromJSDate(d, { zone: "utc" }).setZone(timezone).toFormat("HH:mm");
+}
+
+function phoneDigits(raw: string) {
+  return raw.replace(/\D/g, "");
+}
+
+function AppointmentCard({
+  a,
+  timezone,
+  currency,
+  dateISO,
+  highlight,
+  ask,
+}: {
+  a: Appointment;
+  timezone: string;
+  currency: string;
+  dateISO: string;
+  highlight?: boolean;
+  ask?: boolean;
+}) {
+  const editable = isOpen(a);
+  const timeFmt = (d: Date) => zonedTime(d, timezone);
+  const money = (amount: number) => formatMoney(amount, currency);
+  return (
+    <li
+      className={cn(
+        "flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-card",
+        highlight && "border-primary/50 ring-2 ring-primary/20",
+        !editable && "opacity-80",
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold tabular-nums">{timeFmt(a.startsAt)}</span>
+          <span className="text-xs text-muted-foreground">{a.service.durationMin} min</span>
+        </p>
+        <StatusBadge status={a.status} />
+      </div>
+      <div>
+        <p className="font-medium">{a.customer.name}</p>
+        <p className="text-sm text-muted-foreground">
+          {a.service.name} · {money(Number(a.priceAtBooking))}
+        </p>
+        {a.customer.notes ? (
+          <p className="mt-1.5 flex items-start gap-1.5 text-sm text-muted-foreground">
+            <StickyNote className="mt-0.5 size-4 shrink-0" />
+            {a.customer.notes}
+          </p>
+        ) : null}
+      </div>
+      {ask ? (
+        <Notice tone="warning">Terminó a las {timeFmt(a.endsAt)}. ¿Cómo salió?</Notice>
+      ) : null}
+      <div className="grid grid-cols-2 gap-2">
+        <Button asChild variant="secondary" size="lg">
+          <a href={`tel:${a.customer.phone}`}>
+            <Phone /> Llamar
+          </a>
+        </Button>
+        <Button asChild variant="secondary" size="lg">
+          <a href={`https://wa.me/${phoneDigits(a.customer.phone)}`} target="_blank" rel="noreferrer">
+            <MessageCircle /> WhatsApp
+          </a>
+        </Button>
+        {editable ? (
+          <>
+            <form action={markOutcome.bind(null, a.id, "completed", dateISO)} className="flex">
+              <SubmitButton size="lg" className="w-full" pendingLabel="Marcando…">
+                <Check /> Listo
+              </SubmitButton>
+            </form>
+            <form action={markOutcome.bind(null, a.id, "no_show", dateISO)} className="flex">
+              <SubmitButton
+                size="lg"
+                variant="outline"
+                className="w-full border-danger/40 text-danger hover:bg-danger-soft hover:text-danger"
+                pendingLabel="Marcando…"
+              >
+                <X /> No vino
+              </SubmitButton>
+            </form>
+          </>
+        ) : null}
+      </div>
+    </li>
+  );
+}
 
 export default async function BarberHomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string; error?: string }>;
+  searchParams: Promise<{ date?: string }>;
 }) {
   const ctx = await requireTenantRole("barber");
   const tenant = (await getTenantById(ctx.tenantId))!;
-  const { date: dateParam, error } = await searchParams;
+  const { date: dateParam } = await searchParams;
 
   const today = DateTime.now().setZone(tenant.timezone).startOf("day");
   let day = dateParam
@@ -50,6 +160,7 @@ export default async function BarberHomePage({
     : today;
   if (!day.isValid) day = today;
   const dateISO = day.toISODate()!;
+  const isToday = day.equals(today);
 
   async function logout() {
     "use server";
@@ -58,273 +169,178 @@ export default async function BarberHomePage({
   }
 
   const barber = await getOwnBarber(ctx.tenantId, ctx.user.id);
-
   const data = barber
     ? await getBarberDay(ctx.tenantId, tenant.timezone, barber.id, dateISO)
     : null;
 
-  const timeFmt = (d: Date) =>
-    DateTime.fromJSDate(d, { zone: "utc" })
-      .setZone(tenant.timezone)
-      .toFormat("HH:mm");
-  const phoneDigits = (raw: string) => raw.replace(/\D/g, "");
+  const timeFmt = (d: Date) => zonedTime(d, tenant.timezone);
+  const money = (amount: number) => formatMoney(amount, tenant.currency);
 
   const nowLocal = DateTime.now().setZone(tenant.timezone);
+  const nowMs = nowLocal.toMillis();
   const defaultBlockStart = `${dateISO}T${nowLocal
     .plus({ minutes: 15 - (nowLocal.minute % 15) })
     .toFormat("HH:mm")}`;
 
-  const dayIsEmpty =
-    data != null && data.appointments.length === 0 && data.timeOff.length === 0;
+  const appointments = data?.appointments ?? [];
+  const toMark = appointments.filter((a) => isOpen(a) && a.endsAt.getTime() < nowMs);
+  const upcoming = appointments.filter((a) => isOpen(a) && a.endsAt.getTime() >= nowMs);
+  const done = appointments.filter((a) => !isOpen(a));
+  const next = isToday ? upcoming[0] : undefined;
+  const later = next ? upcoming.slice(1) : upcoming;
 
-  const dayTotal =
-    data?.appointments
-      .filter((a) => a.status !== "no_show")
-      .reduce((sum, a) => sum + Number(a.priceAtBooking), 0) ?? 0;
-  const money = new Intl.NumberFormat("es", {
-    style: "currency",
-    currency: tenant.currency,
-    maximumFractionDigits: 0,
-  }).format(dayTotal);
-  const nowMs = nowLocal.toMillis();
+  const dayTotal = appointments
+    .filter((a) => a.status !== "no_show")
+    .reduce((sum, a) => sum + Number(a.priceAtBooking), 0);
+  const countLabel = `${appointments.length} ${appointments.length === 1 ? "cita" : "citas"}`;
 
   return (
-    <main className="mx-auto flex h-dvh max-w-md flex-col gap-5 px-4 py-6">
-      <header className="flex shrink-0 items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-4 pt-4 pb-28">
+      <header className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold">
             {barber ? barber.displayName : "Mi día"}
           </h1>
-          <p className="text-sm opacity-70">{tenant.name}</p>
+          <p className="truncate text-sm text-muted-foreground">{tenant.name}</p>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/select-tenant" className="opacity-70 hover:underline">
-            Cambiar
-          </Link>
-          <form action={logout}>
-            <button type="submit" className="opacity-70 hover:underline">
-              Salir
-            </button>
-          </form>
-          <ThemeToggle />
-        </div>
+        <BarberMenu
+          name={barber?.displayName ?? "Mi día"}
+          tenantName={tenant.name}
+          logout={logout}
+        />
       </header>
 
-      {error ? (
-        <p className="shrink-0 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          {error}
-        </p>
-      ) : null}
-
       {!barber ? (
-        <p className="text-sm opacity-70">
+        <Notice>
           Tu cuenta no está vinculada a ningún barbero activo de esta
           barbería. Pide al administrador que te vincule desde tu ficha.
-        </p>
+        </Notice>
       ) : (
         <>
-          <nav className="flex shrink-0 items-center justify-between text-sm">
-            <Link
-              href={`/barber?date=${day.minus({ days: 1 }).toISODate()}`}
-              className="rounded-md border border-black/15 px-3 py-1.5 dark:border-white/20"
-            >
-              ←
-            </Link>
-            <div className="text-center">
-              <p className="font-semibold capitalize">
-                {day.setLocale("es").toFormat("cccc d 'de' LLLL")}
-              </p>
-              <div className="mt-1 flex items-center justify-center gap-2">
-                {!day.equals(today) ? (
-                  <Link href="/barber" className="text-xs underline opacity-70">
-                    Volver a hoy
-                  </Link>
-                ) : null}
-                <DateJumpInput defaultValue={dateISO} />
+          <div className="flex flex-col gap-2">
+            <nav className="flex items-center gap-1 rounded-xl border bg-card p-1.5 shadow-card">
+              <Button asChild variant="ghost" size="icon-lg">
+                <Link href={`/barber?date=${day.minus({ days: 1 }).toISODate()}`} aria-label="Día anterior">
+                  <ChevronLeft />
+                </Link>
+              </Button>
+              <div className="min-w-0 flex-1 text-center">
+                <p className="truncate font-semibold">{longDateEs(day)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {isToday ? "Hoy · " : ""}
+                  {countLabel} · {money(dayTotal)}
+                </p>
               </div>
+              <Button asChild variant="ghost" size="icon-lg">
+                <Link href={`/barber?date=${day.plus({ days: 1 }).toISODate()}`} aria-label="Día siguiente">
+                  <ChevronRight />
+                </Link>
+              </Button>
+            </nav>
+            <div className="flex items-center justify-center gap-3">
+              {!isToday ? (
+                <Button asChild variant="link" size="sm">
+                  <Link href="/barber">Volver a hoy</Link>
+                </Button>
+              ) : null}
+              <DateJumpInput defaultValue={dateISO} />
             </div>
-            <Link
-              href={`/barber?date=${day.plus({ days: 1 }).toISODate()}`}
-              className="rounded-md border border-black/15 px-3 py-1.5 dark:border-white/20"
-            >
-              →
-            </Link>
-          </nav>
-
-          {data && !dayIsEmpty ? (
-            <p className="shrink-0 text-sm opacity-70">
-              {data.appointments.length}{" "}
-              {data.appointments.length === 1 ? "cita" : "citas"} · {money}
-            </p>
-          ) : null}
-
-          {/* Alto estable: esta zona siempre ocupa el mismo espacio (llena
-              lo que queda del viewport) sin importar cuántas citas tenga el
-              día — el contenido hace scroll adentro en vez de mover el
-              tamaño de la tarjeta al cambiar de día. */}
-          <div
-            className={`flex flex-1 flex-col gap-5 overflow-y-auto ${
-              dayIsEmpty ? "items-center justify-center" : ""
-            }`}
-          >
-          {dayIsEmpty ? (
-            <p className="text-center text-sm opacity-70">
-              Sin citas este día.
-            </p>
-          ) : null}
-
-          <ul className="flex flex-col gap-2.5">
-            {data?.timeOff.map((t) => (
-              <li
-                key={t.id}
-                className="flex items-center justify-between rounded-lg border border-dashed border-black/20 px-3 py-2 text-sm opacity-80 dark:border-white/25"
-              >
-                <span className="flex items-center gap-1.5 tabular-nums">
-                  <Ban className="h-3.5 w-3.5 shrink-0" />
-                  {timeFmt(t.startsAt)}–{timeFmt(t.endsAt)}
-                  {t.reason ? ` · ${t.reason}` : ""}
-                </span>
-                <form action={removeTimeOff.bind(null, t.id, dateISO)}>
-                  <button type="submit" className="underline opacity-70">
-                    Quitar
-                  </button>
-                </form>
-              </li>
-            ))}
-
-            {data?.appointments.map((a) => {
-              const chip = STATUS_CHIP[a.status] ?? STATUS_CHIP.confirmed;
-              const editable =
-                a.status === "confirmed" || a.status === "pending";
-              // Ya pasó y sigue sin marcarse: la atenuamos para que resalte
-              // lo que sigue en el día (completed/no_show ya se ven distinto
-              // por su chip, no hace falta atenuarlas también).
-              const isPast = editable && a.endsAt.getTime() < nowMs;
-              return (
-                <li
-                  key={a.id}
-                  className={`flex flex-col gap-2 rounded-lg border border-black/10 p-3 dark:border-white/15 ${
-                    isPast ? "opacity-50" : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-lg font-bold tabular-nums">
-                        {timeFmt(a.startsAt)}
-                      </p>
-                      <p className="font-medium">{a.customer.name}</p>
-                      <p className="text-sm opacity-70">
-                        {a.service.name} · ${Number(a.priceAtBooking)}
-                      </p>
-                      {a.customer.notes ? (
-                        <p className="mt-1 flex items-start gap-1 text-xs opacity-60">
-                          <StickyNote className="h-3.5 w-3.5 shrink-0 translate-y-0.5" />
-                          {a.customer.notes}
-                        </p>
-                      ) : null}
-                    </div>
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs ${chip.cls}`}
-                    >
-                      {chip.label}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <a
-                      href={`tel:${a.customer.phone}`}
-                      className="flex items-center gap-1.5 rounded-md border border-black/15 px-3 py-1.5 dark:border-white/20"
-                    >
-                      <Phone className="h-3.5 w-3.5" /> Llamar
-                    </a>
-                    <a
-                      href={`https://wa.me/${phoneDigits(a.customer.phone)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-md border border-black/15 px-3 py-1.5 dark:border-white/20"
-                    >
-                      WhatsApp
-                    </a>
-                    {editable ? (
-                      <>
-                        <form
-                          action={markOutcome.bind(
-                            null,
-                            a.id,
-                            "completed",
-                            dateISO,
-                          )}
-                          className="ml-auto"
-                        >
-                          <button
-                            type="submit"
-                            className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 font-medium text-white"
-                          >
-                            <Check className="h-3.5 w-3.5" /> Listo
-                          </button>
-                        </form>
-                        <form
-                          action={markOutcome.bind(null, a.id, "no_show", dateISO)}
-                        >
-                          <button
-                            type="submit"
-                            className="rounded-md border border-red-300 px-3 py-1.5 text-red-700 dark:border-red-900 dark:text-red-400"
-                          >
-                            No vino
-                          </button>
-                        </form>
-                      </>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
           </div>
 
-          <details className="shrink-0 rounded-lg border border-black/10 p-3 dark:border-white/15">
-            <summary className="flex cursor-pointer items-center gap-1.5 text-sm font-medium">
-              <Ban className="h-4 w-4" /> Bloquear un hueco
-            </summary>
-            <form action={blockSlot} className="mt-3 flex flex-col gap-2">
-              <input type="hidden" name="date" value={dateISO} />
-              <label className="text-xs font-medium" htmlFor="startLocal">
-                Desde
-              </label>
-              <DateTimeInput
-                id="startLocal"
-                name="startLocal"
-                type="datetime-local"
-                required
-                defaultValue={defaultBlockStart}
-                className={inputClass}
-              />
-              <label className="text-xs font-medium" htmlFor="minutes">
-                Duración
-              </label>
-              <select id="minutes" name="minutes" className={inputClass} defaultValue={30}>
-                <option value={15}>15 min</option>
-                <option value={30}>30 min</option>
-                <option value={60}>1 hora</option>
-                <option value={120}>2 horas</option>
-                <option value={240}>4 horas</option>
-                <option value={480}>Todo el día (8 h)</option>
-              </select>
-              <input
-                name="reason"
-                maxLength={120}
-                placeholder="Motivo (opcional)"
-                className={inputClass}
-              />
-              <button
-                type="submit"
-                className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground"
-              >
-                Bloquear
-              </button>
-            </form>
-          </details>
+          {data && data.timeOff.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {data.timeOff.map((t) => (
+                <li
+                  key={t.id}
+                  className="closed-day flex items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-3 text-sm"
+                >
+                  <span className="flex items-center gap-2 tabular-nums">
+                    <Ban className="size-4 shrink-0 text-muted-foreground" />
+                    {timeFmt(t.startsAt)}–{timeFmt(t.endsAt)}
+                    {t.reason ? <span className="text-muted-foreground">· {t.reason}</span> : null}
+                  </span>
+                  <form action={removeTimeOff.bind(null, t.id, dateISO)}>
+                    <ConfirmSubmit
+                      title="¿Quitar este bloqueo?"
+                      description={`${timeFmt(t.startsAt)}–${timeFmt(t.endsAt)} volverá a estar disponible para reservas.`}
+                      confirmLabel="Sí, quitar"
+                      className="text-sm font-medium underline underline-offset-4"
+                    >
+                      Quitar
+                    </ConfirmSubmit>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {appointments.length === 0 ? (
+            <Empty className="rounded-xl border border-dashed bg-card/60 py-10">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <Check />
+                </EmptyMedia>
+                <EmptyTitle>Sin citas este día</EmptyTitle>
+                <EmptyDescription>
+                  Las reservas nuevas aparecen aquí en cuanto se hacen.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : null}
+
+          {toMark.length > 0 ? (
+            <section className="flex flex-col gap-2.5">
+              <SectionLabel>Por marcar</SectionLabel>
+              <ul className="flex flex-col gap-3">
+                {toMark.map((a) => (
+                  <AppointmentCard key={a.id} a={a} timezone={tenant.timezone} currency={tenant.currency} dateISO={dateISO} ask />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {next ? (
+            <section className="flex flex-col gap-2.5">
+              <SectionLabel>Siguiente</SectionLabel>
+              <ul className="flex flex-col gap-3">
+                <AppointmentCard a={next} timezone={tenant.timezone} currency={tenant.currency} dateISO={dateISO} highlight />
+              </ul>
+            </section>
+          ) : null}
+
+          {later.length > 0 ? (
+            <section className="flex flex-col gap-2.5">
+              <SectionLabel>{next ? "Más tarde" : "Citas"}</SectionLabel>
+              <ul className="flex flex-col gap-3">
+                {later.map((a) => (
+                  <AppointmentCard key={a.id} a={a} timezone={tenant.timezone} currency={tenant.currency} dateISO={dateISO} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {done.length > 0 ? (
+            <section className="flex flex-col gap-2.5">
+              <SectionLabel>Terminadas</SectionLabel>
+              <ul className="flex flex-col gap-3">
+                {done.map((a) => (
+                  <AppointmentCard key={a.id} a={a} timezone={tenant.timezone} currency={tenant.currency} dateISO={dateISO} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/90 backdrop-blur-md">
+            <div className="mx-auto w-full max-w-md px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <BlockSlotSheet dateISO={dateISO} defaultStart={defaultBlockStart} />
+            </div>
+          </div>
         </>
       )}
+
+      <Suspense>
+        <FlashToast />
+      </Suspense>
     </main>
   );
 }

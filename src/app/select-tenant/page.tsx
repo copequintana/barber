@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ChevronRight, LogOut, Plus } from "lucide-react";
+import { AuthShell } from "@/components/auth-shell";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
 import {
   ACTIVE_TENANT_COOKIE,
@@ -40,43 +44,48 @@ export default async function SelectTenantPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6">
-      <div>
-        <h1 className="text-2xl font-bold">Tus barberías</h1>
-        <p className="text-sm opacity-70">
-          Sesión: {user.email}. Elige con cuál trabajar.
-        </p>
-      </div>
-
-      <ul className="flex flex-col gap-2">
-        {memberships.map((m) => (
-          <li key={m.tenantId}>
-            <form action={select}>
-              <input type="hidden" name="tenantId" value={m.tenantId} />
-              <button
-                type="submit"
-                className="flex w-full items-center justify-between rounded-lg border border-black/15 px-4 py-3 text-left hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
-              >
-                <span className="font-medium">{m.tenant.name}</span>
-                <span className="text-xs uppercase tracking-wide opacity-60">
-                  {ROLE_LABEL[m.role]}
-                </span>
-              </button>
-            </form>
-          </li>
-        ))}
-      </ul>
-
-      <div className="flex items-center justify-between text-sm">
-        <Link className="underline" href="/onboarding">
-          Crear otra barbería
-        </Link>
+    <AuthShell
+      wide
+      title="Tus barberías"
+      description={`Entraste como ${user.email}. Elige con cuál trabajar.`}
+      footer={
         <form action={logout}>
-          <button type="submit" className="underline opacity-70">
-            Cerrar sesión
+          <button type="submit" className="inline-flex items-center gap-1.5 hover:text-foreground">
+            <LogOut className="size-4" /> Cerrar sesión
           </button>
         </form>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2">
+          {memberships.map((m) => (
+            <li key={m.tenantId}>
+              <form action={select}>
+                <input type="hidden" name="tenantId" value={m.tenantId} />
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-3 rounded-lg border bg-card px-3 py-3 text-left transition-colors hover:border-primary/50 hover:bg-muted"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary">
+                    {m.tenant.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{m.tenant.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">/b/{m.tenant.slug}</span>
+                  </span>
+                  <Badge variant="secondary">{ROLE_LABEL[m.role]}</Badge>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/onboarding">
+            <Plus /> Crear otra barbería
+          </Link>
+        </Button>
       </div>
-    </main>
+    </AuthShell>
   );
 }

@@ -73,7 +73,7 @@ export async function blockSlot(formData: FormData) {
   if (!result.ok) {
     back(parsed.data.date, `&error=${encodeURIComponent(ERROR_MSG[result.error])}`);
   }
-  back(parsed.data.date);
+  back(parsed.data.date, "&ok=1");
 }
 
 export async function removeTimeOff(timeOffId: string, date: string) {

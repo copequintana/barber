@@ -3,6 +3,7 @@
  * clientes de correo renderizan de forma consistente.
  */
 
+import { readableTextOn, textColorOnWhite } from "../color";
 import { DEFAULT_BRAND_COLOR } from "../tenancy";
 
 export type AppointmentEmailData = {
@@ -66,17 +67,17 @@ export function confirmationEmail(d: AppointmentEmailData): {
   subject: string;
   html: string;
 } {
-  const accent = d.brandColor ?? "#1e3a5f";
+  const accent = d.brandColor ?? DEFAULT_BRAND_COLOR;
   const body = `
 <tr><td style="padding:0 28px;font-size:14px;line-height:1.5;">
 <p>Hola ${esc(d.customerName)}, tu cita en <strong>${esc(d.tenantName)}</strong> quedó confirmada:</p>
 </td></tr>
 ${detailRows(d)}
 <tr><td style="padding:20px 28px;" align="center">
-<a href="${esc(d.citaUrl)}" style="display:inline-block;background:${esc(accent)};color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">Ver o cancelar mi cita</a>
+<a href="${esc(d.citaUrl)}" style="display:inline-block;background:${esc(accent)};color:${readableTextOn(accent)};text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">Ver o cancelar mi cita</a>
 </td></tr>
 <tr><td style="padding:0 28px;font-size:13px;color:#8a8578;" align="center">
-<a href="${esc(d.icsUrl)}" style="color:#1e3a5f;">Agregar a mi calendario (.ics)</a>
+<a href="${esc(d.icsUrl)}" style="color:${esc(textColorOnWhite(accent))};">Agregar a mi calendario (.ics)</a>
 </td></tr>`;
   return {
     subject: `Cita confirmada · ${d.tenantName} · ${d.whenText}`,
@@ -88,14 +89,14 @@ export function cancellationEmail(d: AppointmentEmailData): {
   subject: string;
   html: string;
 } {
-  const accent = d.brandColor ?? "#1e3a5f";
+  const accent = d.brandColor ?? DEFAULT_BRAND_COLOR;
   const body = `
 <tr><td style="padding:0 28px;font-size:14px;line-height:1.5;">
 <p>Hola ${esc(d.customerName)}, tu cita en <strong>${esc(d.tenantName)}</strong> fue cancelada:</p>
 </td></tr>
 ${detailRows(d)}
 <tr><td style="padding:20px 28px;font-size:14px;" align="center">
-¿Quieres otra fecha? <a href="${esc(d.citaUrl.replace(/\/cita\/.*$/, "/reservar"))}" style="color:${esc(accent)};font-weight:bold;">Reserva de nuevo aquí</a>.
+¿Quieres otra fecha? <a href="${esc(d.citaUrl.replace(/\/cita\/.*$/, "/reservar"))}" style="color:${esc(textColorOnWhite(accent))};font-weight:bold;">Reserva de nuevo aquí</a>.
 </td></tr>`;
   return {
     subject: `Cita cancelada · ${d.tenantName}`,
@@ -106,7 +107,7 @@ ${detailRows(d)}
 export function reminderEmail(
   d: AppointmentEmailData & { hoursBefore: number },
 ): { subject: string; html: string } {
-  const accent = d.brandColor ?? "#1e3a5f";
+  const accent = d.brandColor ?? DEFAULT_BRAND_COLOR;
   const body = `
 <tr><td style="padding:0 28px;font-size:14px;line-height:1.5;">
 <p>Hola ${esc(d.customerName)}, te recordamos tu cita en <strong>${esc(d.tenantName)}</strong>${
@@ -115,7 +116,7 @@ export function reminderEmail(
 </td></tr>
 ${detailRows(d)}
 <tr><td style="padding:20px 28px;" align="center">
-<a href="${esc(d.citaUrl)}" style="display:inline-block;background:${esc(accent)};color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">Ver, mover o cancelar mi cita</a>
+<a href="${esc(d.citaUrl)}" style="display:inline-block;background:${esc(accent)};color:${readableTextOn(accent)};text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">Ver, mover o cancelar mi cita</a>
 </td></tr>
 <tr><td style="padding:0 28px;font-size:13px;color:#8a8578;" align="center">
 Si no puedes asistir, cancela o reprograma con tiempo. ¡Gracias!
@@ -130,17 +131,17 @@ export function rescheduleEmail(d: AppointmentEmailData): {
   subject: string;
   html: string;
 } {
-  const accent = d.brandColor ?? "#1e3a5f";
+  const accent = d.brandColor ?? DEFAULT_BRAND_COLOR;
   const body = `
 <tr><td style="padding:0 28px;font-size:14px;line-height:1.5;">
 <p>Hola ${esc(d.customerName)}, tu cita en <strong>${esc(d.tenantName)}</strong> cambió de horario. Los nuevos datos:</p>
 </td></tr>
 ${detailRows(d)}
 <tr><td style="padding:20px 28px;" align="center">
-<a href="${esc(d.citaUrl)}" style="display:inline-block;background:${esc(accent)};color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">Ver mi cita</a>
+<a href="${esc(d.citaUrl)}" style="display:inline-block;background:${esc(accent)};color:${readableTextOn(accent)};text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">Ver mi cita</a>
 </td></tr>
 <tr><td style="padding:0 28px;font-size:13px;color:#8a8578;" align="center">
-<a href="${esc(d.icsUrl)}" style="color:#1e3a5f;">Actualizar mi calendario (.ics)</a>
+<a href="${esc(d.icsUrl)}" style="color:${esc(textColorOnWhite(accent))};">Actualizar mi calendario (.ics)</a>
 </td></tr>`;
   return {
     subject: `Cita reprogramada · ${d.tenantName} · ${d.whenText}`,
@@ -151,7 +152,7 @@ ${detailRows(d)}
 export function staffNewBookingEmail(
   d: AppointmentEmailData & { customerPhone: string },
 ): { subject: string; html: string } {
-  const accent = d.brandColor ?? "#1e3a5f";
+  const accent = d.brandColor ?? DEFAULT_BRAND_COLOR;
   const body = `
 <tr><td style="padding:0 28px;font-size:14px;line-height:1.5;">
 <p>Nueva reserva en línea de <strong>${esc(d.customerName)}</strong> (${esc(d.customerPhone)}):</p>
@@ -184,7 +185,7 @@ export function setPasswordEmail(input: {
 <p>${intro}</p>
 </td></tr>
 <tr><td style="padding:20px 28px;" align="center">
-<a href="${esc(input.url)}" style="display:inline-block;background:${accent};color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">${
+<a href="${esc(input.url)}" style="display:inline-block;background:${accent};color:${readableTextOn(accent)};text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:bold;">${
     input.isNewAccount ? "Configurar mi contraseña" : "Elegir nueva contraseña"
   }</a>
 </td></tr>

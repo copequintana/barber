@@ -1,8 +1,14 @@
 ﻿"use client";
 
 import { useActionState, useState } from "react";
-import { createTenantAction, type OnboardingState } from "./actions";
+import { AuthError } from "@/components/auth-shell";
+import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Spinner } from "@/components/ui/spinner";
 import { CURRENCIES, TIMEZONES } from "@/lib/timezones";
+import { createTenantAction, type OnboardingState } from "./actions";
 
 function slugify(name: string): string {
   return name
@@ -14,9 +20,6 @@ function slugify(name: string): string {
     .slice(0, 40);
 }
 
-const inputClass =
-  "rounded-md border border-black/15 bg-transparent px-3 py-2 dark:border-white/20";
-
 export function OnboardingForm() {
   const [state, formAction, pending] = useActionState<OnboardingState, FormData>(
     createTenantAction,
@@ -26,96 +29,76 @@ export function OnboardingForm() {
   const [slugTouched, setSlugTouched] = useState(false);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
-      {state.error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          {state.error}
-        </p>
-      ) : null}
+    <form action={formAction}>
+      <FieldGroup className="gap-4">
+        {state.error ? <AuthError>{state.error}</AuthError> : null}
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" htmlFor="name">
-          Nombre de la barbería
-        </label>
-        <input
-          id="name"
-          name="name"
-          required
-          maxLength={60}
-          placeholder="La Cueva Barber Shop"
-          className={inputClass}
-          onChange={(e) => {
-            if (!slugTouched) setSlug(slugify(e.target.value));
-          }}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" htmlFor="slug">
-          Dirección de tu página
-        </label>
-        <div className="flex items-center gap-1">
-          <span className="text-sm opacity-60">barberdesk.app/b/</span>
-          <input
-            id="slug"
-            name="slug"
+        <Field>
+          <FieldLabel htmlFor="name">Nombre de la barbería</FieldLabel>
+          <Input
+            id="name"
+            name="name"
             required
-            value={slug}
+            maxLength={60}
+            placeholder="La Cueva Barber Shop"
             onChange={(e) => {
-              setSlugTouched(true);
-              setSlug(slugify(e.target.value));
+              if (!slugTouched) setSlug(slugify(e.target.value));
             }}
-            className={`${inputClass} flex-1`}
           />
-        </div>
-      </div>
+        </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" htmlFor="timezone">
-            Zona horaria
-          </label>
-          <select
-            id="timezone"
-            name="timezone"
-            required
-            defaultValue="America/Hermosillo"
-            className={inputClass}
-          >
-            {TIMEZONES.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz.replace("America/", "").replaceAll("_", " ")}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" htmlFor="currency">
-            Moneda
-          </label>
-          <select
-            id="currency"
-            name="currency"
-            required
-            defaultValue="MXN"
-            className={inputClass}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+        <Field>
+          <FieldLabel htmlFor="slug">Dirección de tu página</FieldLabel>
+          <div className="flex h-9 items-center overflow-hidden rounded-lg border border-input bg-card focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+            <span className="shrink-0 border-r bg-muted px-2.5 py-2 text-sm text-muted-foreground">/b/</span>
+            <input
+              id="slug"
+              name="slug"
+              required
+              value={slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setSlug(slugify(e.target.value));
+              }}
+              className="h-full min-w-0 flex-1 bg-transparent px-2.5 text-base outline-none md:text-sm"
+            />
+          </div>
+          <FieldDescription>Es el link que compartes con tus clientes.</FieldDescription>
+        </Field>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground disabled:opacity-60"
-      >
-        {pending ? "Creando…" : "Crear barbería"}
-      </button>
+        <div className="grid grid-cols-2 gap-3">
+          <Field>
+            <FieldLabel htmlFor="timezone">Zona horaria</FieldLabel>
+            <NativeSelect id="timezone" name="timezone" required defaultValue="America/Hermosillo" className="w-full">
+              {TIMEZONES.map((tz) => (
+                <NativeSelectOption key={tz} value={tz}>
+                  {tz.replace("America/", "").replaceAll("_", " ")}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="currency">Moneda</FieldLabel>
+            <NativeSelect id="currency" name="currency" required defaultValue="MXN" className="w-full">
+              {CURRENCIES.map((c) => (
+                <NativeSelectOption key={c} value={c}>
+                  {c}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </Field>
+        </div>
+
+        <Button type="submit" size="lg" disabled={pending} className="w-full">
+          {pending ? (
+            <>
+              <Spinner /> Creando…
+            </>
+          ) : (
+            "Crear barbería"
+          )}
+        </Button>
+      </FieldGroup>
     </form>
   );
 }

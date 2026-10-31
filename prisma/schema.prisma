@@ -49,6 +49,7 @@ model Tenant {
   logoUrl        String? @map("logo_url")
   brandColor     String? @map("brand_color")
   coverImageUrl  String? @map("cover_image_url")
+  theme          String  @default("moderno")
   // Contacto público (T-UX01): se muestran en /b/[slug] si están definidos
   phone          String?
   address        String?

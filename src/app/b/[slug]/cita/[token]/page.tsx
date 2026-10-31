@@ -2,19 +2,25 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
+import { CalendarPlus, CalendarSync, MapPin, Navigation } from "lucide-react";
+import { ctaClass } from "@/components/booking/bottom-bar";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { Notice } from "@/components/notice";
 import { cancelBookingByToken, getAppointmentByToken } from "@/lib/booking";
+import { formatMoney } from "@/lib/money";
 import { sendCancellationNotification } from "@/lib/notifications";
 import { getTenantBySlug } from "@/lib/tenancy";
-import { formatZoned } from "@/lib/time";
+import { formatZoned, longDateEs, utcToZoned } from "@/lib/time";
+import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Tu cita · BarberDesk" };
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Pendiente de confirmación",
-  confirmed: "Confirmada",
-  completed: "Completada",
-  cancelled: "Cancelada",
-  no_show: "No asistió",
+const STATUS: Record<string, { label: string; className: string }> = {
+  pending: { label: "Pendiente de confirmación", className: "bg-warning-soft text-warning" },
+  confirmed: { label: "Confirmada", className: "bg-success-soft text-success" },
+  completed: { label: "Completada", className: "bg-muted text-muted-foreground" },
+  cancelled: { label: "Cancelada", className: "bg-danger-soft text-danger" },
+  no_show: { label: "No asistió", className: "bg-danger-soft text-danger" },
 };
 
 export default async function AppointmentPage({
@@ -57,98 +63,141 @@ export default async function AppointmentPage({
   }
 
   const isCancelled = appt.status === "cancelled";
+  const status = STATUS[appt.status] ?? { label: appt.status, className: "bg-muted" };
+  const start = utcToZoned(tenant.timezone, appt.startsAt);
+  const mapsUrl =
+    tenant.lat != null && tenant.lng != null
+      ? `https://www.google.com/maps/search/?api=1&query=${tenant.lat},${tenant.lng}`
+      : tenant.address
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tenant.address)}`
+        : null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6 py-10">
-      <div>
-        <p className="text-sm opacity-70">{tenant.name}</p>
-        <h1 className="text-2xl font-bold">Tu cita</h1>
+    <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-5 py-8">
+      <div className="flex flex-col gap-1">
+        <Link href={`/b/${slug}`} className="eyebrow self-start hover:underline">
+          {tenant.name}
+        </Link>
+        <h1 className="title-lg">Tu cita</h1>
       </div>
 
       {movida && !cancelled && !error ? (
-        <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-          ¡Listo! Tu cita quedó en el nuevo horario.
-        </p>
+        <Notice tone="success">¡Listo! Tu cita quedó en el nuevo horario.</Notice>
       ) : null}
       {nueva && !cancelled && !error ? (
-        <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-          ¡Cita reservada! Guarda este enlace: con él puedes ver o cancelar tu
-          cita.
-        </p>
+        <Notice tone="success">
+          ¡Cita reservada! Guarda este enlace: con él puedes ver, cambiar o
+          cancelar tu cita.
+        </Notice>
       ) : null}
       {cancelled ? (
-        <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+        <Notice tone="success">
           Tu cita fue cancelada. ¡Te esperamos en otra ocasión!
-        </p>
+        </Notice>
       ) : null}
       {error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        <Notice tone="danger">
           Ya no es posible cancelar esta cita en línea. Contacta directamente a
           la barbería.
-        </p>
+        </Notice>
       ) : null}
 
-      <div className="flex flex-col gap-2 rounded-lg border border-black/10 p-4 dark:border-white/15">
-        <p className="text-lg font-semibold">{appt.serviceName}</p>
-        <p>
-          Con <strong>{appt.barberName}</strong>
-        </p>
-        <p className="tabular-nums">
-          {formatZoned(tenant.timezone, appt.startsAt)} (hora local)
-        </p>
-        <p className="text-sm opacity-70">A nombre de {appt.customerName}</p>
-        <p
-          className={`self-start rounded-full px-2.5 py-0.5 text-xs ${
-            isCancelled
-              ? "bg-black/10 dark:bg-white/15"
-              : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-          }`}
-        >
-          {STATUS_LABEL[appt.status] ?? appt.status}
-        </p>
-      </div>
+      <article className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-card">
+        <div className="flex flex-col gap-4 p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="title-md">{appt.serviceName}</h2>
+              <p className="text-sm text-muted-foreground">
+                con {appt.barberName} · {appt.durationMin} min
+              </p>
+            </div>
+            <span
+              className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium", status.className)}
+            >
+              {status.label}
+            </span>
+          </div>
+          <div className={cn(isCancelled && "text-muted-foreground line-through")}>
+            <p className="font-medium">{longDateEs(start)}</p>
+            <p className="font-num text-4xl leading-tight font-semibold">
+              {start.toFormat("HH:mm")}
+            </p>
+          </div>
+        </div>
+        <dl className="grid grid-cols-2 gap-3 border-t border-dashed px-5 py-4 text-sm">
+          <div>
+            <dt className="text-muted-foreground">A nombre de</dt>
+            <dd className="font-medium">{appt.customerName}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Precio</dt>
+            <dd className="font-num font-medium">{formatMoney(appt.price, tenant.currency)}</dd>
+          </div>
+        </dl>
+        {tenant.address ? (
+          <div className="flex items-start justify-between gap-3 border-t px-5 py-4 text-sm">
+            <p className="flex items-start gap-2">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              {tenant.address}
+            </p>
+            {mapsUrl ? (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-1 font-medium underline underline-offset-4"
+              >
+                <Navigation className="size-3.5" /> Cómo llegar
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+      </article>
 
       {!isCancelled ? (
-        <a
-          href={`/b/${slug}/cita/${token}/ics`}
-          className="rounded-md bg-[var(--brand)] px-4 py-2 text-center font-medium text-white"
-        >
-          Agregar a mi calendario (.ics)
+        <a href={`/b/${slug}/cita/${token}/ics`} className={ctaClass}>
+          <CalendarPlus className="size-5 shrink-0" /> Agregar al calendario
         </a>
-      ) : null}
-
-      {appt.cancelable ? (
-        <Link
-          href={`/b/${slug}/cita/${token}/reprogramar`}
-          className="rounded-md border border-black/15 px-4 py-2 text-center font-medium dark:border-white/20"
-        >
-          Cambiar horario
+      ) : (
+        <Link href={`/b/${slug}/reservar`} className={ctaClass}>
+          Reservar otra cita
         </Link>
+      )}
+
+      {appt.cancelable ? (
+        <div className="grid grid-cols-2 gap-2.5">
+          <Link
+            href={`/b/${slug}/cita/${token}/reprogramar`}
+            className="flex h-11 items-center justify-center gap-1.5 rounded-lg border bg-card font-medium hover:bg-muted"
+          >
+            <CalendarSync className="size-4" /> Cambiar horario
+          </Link>
+          <form action={cancel} className="flex">
+            <ConfirmSubmit
+              title="¿Cancelar tu cita?"
+              description={`${appt.serviceName} con ${appt.barberName}, ${formatZoned(tenant.timezone, appt.startsAt)}. El horario quedará libre para alguien más; si solo necesitas otra hora, usa Cambiar horario.`}
+              confirmLabel="Sí, cancelar mi cita"
+              cancelLabel="No, conservarla"
+              pendingLabel="Cancelando…"
+              className="h-11 w-full rounded-lg border border-danger/40 font-medium text-danger hover:bg-danger-soft disabled:opacity-60"
+            >
+              Cancelar mi cita
+            </ConfirmSubmit>
+          </form>
+        </div>
       ) : null}
 
       {appt.cancelable ? (
-        <form action={cancel} className="flex flex-col gap-2">
-          <button
-            type="submit"
-            className="rounded-md border border-red-300 px-4 py-2 font-medium text-red-700 dark:border-red-900 dark:text-red-400"
-          >
-            Cancelar mi cita
-          </button>
-          <p className="text-xs opacity-60">
-            Puedes cancelar hasta {Math.round(tenant.cancelMinMinutes / 60)} h
-            antes de la hora de tu cita.
-          </p>
-        </form>
+        <p className="text-center text-xs text-muted-foreground">
+          Puedes cambiar o cancelar hasta {Math.round(tenant.cancelMinMinutes / 60)} h
+          antes de tu cita.
+        </p>
       ) : !isCancelled ? (
-        <p className="text-sm opacity-70">
+        <p className="text-center text-sm text-muted-foreground">
           Esta cita ya no puede cancelarse en línea. Si no puedes asistir,
-          avisa a la barbería.
+          avisa a la barbería{tenant.phone ? ` al ${tenant.phone}` : ""}.
         </p>
       ) : null}
-
-      <Link href={`/b/${slug}`} className="text-sm underline opacity-70">
-        ← Volver a {tenant.name}
-      </Link>
     </main>
   );
 }
