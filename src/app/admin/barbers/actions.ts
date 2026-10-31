@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { del } from "@vercel/blob";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { prisma, withTenant } from "@/lib/db";
+import { linkBarberAccount, unlinkBarberAccount } from "@/lib/barber-access";
+import { withTenant } from "@/lib/db";
 import { requireTenantRole } from "@/lib/guards";
 
 /**
@@ -168,23 +169,8 @@ export async function linkBarberUser(barberId: string, formData: FormData) {
   if (!parsed.success) fail(path, parsed.error.issues[0].message);
   const email = parsed.data;
 
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: {},
-    create: { email, name: email.split("@")[0] },
-  });
-
-  // No degradar a un owner/admin existente
-  await prisma.membership.upsert({
-    where: { userId_tenantId: { userId: user.id, tenantId: ctx.tenantId } },
-    update: {},
-    create: { userId: user.id, tenantId: ctx.tenantId, role: "barber" },
-  });
-
-  const updated = await withTenant(ctx.tenantId, (tx) =>
-    tx.barber.updateMany({ where: { id: barberId }, data: { userId: user.id } }),
-  );
-  if (updated.count === 0) fail("/admin/barbers", "Barbero no encontrado");
+  const user = await linkBarberAccount(ctx.tenantId, barberId, email);
+  if (!user) fail("/admin/barbers", "Barbero no encontrado");
 
   await sendBarberInvite(email);
 
@@ -208,9 +194,8 @@ export async function resendBarberInvite(barberId: string) {
 
 export async function unlinkBarberUser(barberId: string) {
   const ctx = await requireTenantRole("owner", "admin");
-  await withTenant(ctx.tenantId, (tx) =>
-    tx.barber.updateMany({ where: { id: barberId }, data: { userId: null } }),
-  );
+  const found = await unlinkBarberAccount(ctx.tenantId, barberId);
+  if (!found) fail("/admin/barbers", "Barbero no encontrado");
   revalidatePath(`/admin/barbers/${barberId}`);
   redirect(`/admin/barbers/${barberId}?ok=1`);
 }
