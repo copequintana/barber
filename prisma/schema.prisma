@@ -75,6 +75,10 @@ model Tenant {
   // Suspensión por la plataforma (T20): sin reservas nuevas en línea
   suspended Boolean @default(false)
 
+  isDemo        Boolean   @default(false) @map("is_demo")
+  demoExpiresAt DateTime? @map("demo_expires_at") @db.Timestamptz
+  demoOwnerId   String?   @map("demo_owner_id") @db.Uuid
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   memberships   Membership[]
@@ -86,6 +90,8 @@ model Tenant {
   timeOff       TimeOff[]
   notifications Notification[]
 
+  @@index([isDemo, demoExpiresAt])
+  @@index([demoOwnerId])
   @@map("tenants")
 }
 
@@ -95,6 +101,7 @@ model User {
   name            String?
   phone           String?
   isPlatformAdmin Boolean @default(false) @map("is_platform_admin")
+  isVendor        Boolean @default(false) @map("is_vendor")
 
   // Campos que gestiona better-auth
   emailVerified Boolean @default(false) @map("email_verified")

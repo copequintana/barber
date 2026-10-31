@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { purgeExpiredDemos } from "@/lib/demo";
 import { runCron } from "@/lib/reminders";
 
 /**
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
   }
+  const demosPurged = await purgeExpiredDemos();
   const stats = await runCron();
-  return NextResponse.json(stats);
+  return NextResponse.json({ ...stats, demosPurged });
 }

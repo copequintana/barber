@@ -62,7 +62,7 @@ export const auth = betterAuth({
       // global, sin RLS) y no de `barbers` (con RLS: fuera de una request
       // de admin no hay app.tenant_id seteado, así que esa consulta
       // devolvería vacío siempre).
-      const [hasPassword, membership] = await Promise.all([
+      const [hasPassword, membership, profile] = await Promise.all([
         prisma.account.findFirst({
           where: { userId: user.id, providerId: "credential" },
           select: { id: true },
@@ -71,11 +71,16 @@ export const auth = betterAuth({
           where: { userId: user.id, role: "barber" },
           select: { tenant: { select: { name: true } } },
         }),
+        prisma.user.findUnique({
+          where: { id: user.id },
+          select: { isVendor: true },
+        }),
       ]);
       const { subject, html } = setPasswordEmail({
         url,
         isNewAccount: !hasPassword,
         tenantName: membership?.tenant.name,
+        role: !membership && profile?.isVendor ? "vendor" : "barber",
       });
       const result = await sendEmail({ to: user.email, subject, html });
       if (!result.ok) {

@@ -7,6 +7,8 @@ import { toast } from "sonner";
 const OK_MESSAGES: Record<string, string> = {
   "1": "Cambios guardados",
   invite: "Invitación reenviada",
+  vendor: "Vendedor agregado: ya puede iniciar demos",
+  "vendor-invite": "Vendedor agregado: le enviamos un correo para crear su contraseña",
 };
 
 export function FlashToast() {

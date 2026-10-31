@@ -36,6 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "website",
       images: tenant.coverImageUrl ? [tenant.coverImageUrl] : undefined,
     },
+    robots: tenant.isDemo ? { index: false, follow: false } : undefined,
   };
 }
 

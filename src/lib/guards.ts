@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
 import { getSession } from "./auth";
+import { isExpiredDemo, purgeExpiredDemos } from "./demo";
 import { getMembership } from "./tenancy";
 
 export const ACTIVE_TENANT_COOKIE = "bd_active_tenant";
@@ -45,6 +46,10 @@ export async function requireTenantRole(
 
   const membership = await getMembership(user.id, tenantId);
   if (!membership) redirect("/select-tenant");
+  if (isExpiredDemo(membership.tenant)) {
+    await purgeExpiredDemos();
+    redirect("/select-tenant");
+  }
 
   if (!roles.includes(membership.role)) {
     redirect(membership.role === "barber" ? "/barber" : "/admin");

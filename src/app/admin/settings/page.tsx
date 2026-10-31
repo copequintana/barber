@@ -1,6 +1,7 @@
 import { ExternalLink, QrCode } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { SubmitButton } from "@/components/admin/submit-button";
+import { CopyButton } from "@/components/copy-button";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { LocationPickerLoader } from "@/components/location-picker-loader";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,6 @@ import {
   updateContact,
   updateReminders,
 } from "./actions";
-import { CopyLinkButton } from "./copy-link-button";
 import { SettingsTabs } from "./settings-tabs";
 import { ThemePicker } from "./theme-picker";
 
@@ -181,7 +181,7 @@ export default async function SettingsPage({
                 {publicUrl}
               </p>
               <div className="flex flex-wrap gap-2">
-                <CopyLinkButton url={publicUrl} />
+                <CopyButton value={publicUrl} />
                 <Button asChild variant="outline">
                   <a href={`/b/${tenant.slug}/qr`} target="_blank" rel="noopener noreferrer">
                     <QrCode /> Ver código QR

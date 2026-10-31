@@ -1,4 +1,5 @@
 import { prisma, withTenant } from "./db";
+import { DEMO_EMAIL_DOMAIN, getActiveDemo } from "./demo";
 
 /**
  * Consola de plataforma (T20): operaciones de datos. El guard de acceso
@@ -26,12 +27,17 @@ export function logPlatformAction(input: {
 
 export async function getPlatformMetrics(now = new Date()) {
   const since30d = new Date(now.getTime() - 30 * 24 * 3_600_000);
-  const tenants = await prisma.tenant.count();
-  const suspended = await prisma.tenant.count({ where: { suspended: true } });
-  const users = await prisma.user.count();
+  const tenants = await prisma.tenant.count({ where: { isDemo: false } });
+  const suspended = await prisma.tenant.count({ where: { suspended: true, isDemo: false } });
+  const users = await prisma.user.count({
+    where: { NOT: { email: { endsWith: `@${DEMO_EMAIL_DOMAIN}` } } },
+  });
   // Conteos globales de citas: fuera del contexto RLS se usa una consulta
   // directa con el rol admin no disponible… así que se agrega por tenant.
-  const allTenants = await prisma.tenant.findMany({ select: { id: true } });
+  const allTenants = await prisma.tenant.findMany({
+    where: { isDemo: false },
+    select: { id: true },
+  });
   let totalAppointments = 0;
   let appointments30d = 0;
   let activeTenants30d = 0;
@@ -78,6 +84,8 @@ export async function listTenantsWithActivity(now = new Date()) {
       slug: t.slug,
       plan: t.plan,
       suspended: t.suspended,
+      isDemo: t.isDemo,
+      demoExpiresAt: t.demoExpiresAt,
       createdAt: t.createdAt,
       members: t._count.memberships,
       barbers: stats.barbers,
@@ -100,6 +108,51 @@ export async function setTenantSuspended(
     action: suspended ? "suspend" : "reactivate",
     detail,
   });
+}
+
+export async function listVendors(now = new Date()) {
+  const vendors = await prisma.user.findMany({
+    where: { isVendor: true },
+    orderBy: { email: "asc" },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      accounts: { where: { providerId: "credential" }, select: { id: true } },
+    },
+  });
+  return Promise.all(
+    vendors.map(async (v) => ({
+      id: v.id,
+      email: v.email,
+      name: v.name,
+      hasPassword: v.accounts.length > 0,
+      demo: await getActiveDemo(v.id, now),
+    })),
+  );
+}
+
+export async function grantVendor(actor: PlatformUser, email: string) {
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: { isVendor: true },
+    create: { email, name: email.split("@")[0], isVendor: true },
+    select: {
+      id: true,
+      accounts: { where: { providerId: "credential" }, select: { id: true } },
+    },
+  });
+  await logPlatformAction({ userId: actor.id, action: "grant_vendor", detail: email });
+  return { userId: user.id, needsInvite: user.accounts.length === 0 };
+}
+
+export async function revokeVendor(actor: PlatformUser, userId: string) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { isVendor: false },
+    select: { email: true },
+  });
+  await logPlatformAction({ userId: actor.id, action: "revoke_vendor", detail: user.email });
 }
 
 /** Vista de soporte (solo lectura) de un tenant; registra la impersonación. */

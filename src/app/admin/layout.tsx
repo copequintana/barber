@@ -1,7 +1,9 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { FlashToast } from "@/components/admin/flash-toast";
 import { signOut } from "@/lib/auth";
+import { remainingLabel } from "@/lib/demo";
 import { ACTIVE_TENANT_COOKIE, requireTenantRole } from "@/lib/guards";
 import { getTenantById } from "@/lib/tenancy";
 import { AdminShell } from "./admin-shell";
@@ -27,6 +29,16 @@ export default async function AdminLayout({
       userEmail={ctx.user.email ?? ""}
       logout={logout}
     >
+      {tenant?.isDemo ? (
+        <div className="border-b border-primary/20 bg-primary/10 px-6 py-2 text-center text-sm">
+          Barbería de demostración: se borra en {remainingLabel(tenant.demoExpiresAt)}.{" "}
+          {tenant.demoOwnerId === ctx.user.id ? (
+            <Link href="/demo" className="font-medium underline underline-offset-4">
+              Volver a la demo
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
       {tenant?.suspended ? (
         <div className="border-b border-warning/25 bg-warning-soft px-6 py-2 text-center text-sm text-warning">
           Esta barbería está suspendida por la plataforma: la página pública no

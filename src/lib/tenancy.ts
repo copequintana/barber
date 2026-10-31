@@ -10,7 +10,12 @@ import { prisma } from "./db";
 export const DEFAULT_BRAND_COLOR = "#2747d4";
 
 export function getTenantBySlug(slug: string) {
-  return prisma.tenant.findUnique({ where: { slug } });
+  return prisma.tenant.findFirst({
+    where: {
+      slug,
+      OR: [{ isDemo: false }, { demoExpiresAt: { gt: new Date() } }],
+    },
+  });
 }
 
 export function getTenantById(id: string) {
@@ -20,6 +25,7 @@ export function getTenantById(id: string) {
 export function getMembership(userId: string, tenantId: string) {
   return prisma.membership.findUnique({
     where: { userId_tenantId: { userId, tenantId } },
+    include: { tenant: { select: { isDemo: true, demoExpiresAt: true } } },
   });
 }
 
