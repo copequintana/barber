@@ -1,10 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BarChart3, CalendarDays, Clock, Link2, Palette, Smartphone } from "lucide-react";
+import {
+  BarChart3,
+  CalendarDays,
+  Clock,
+  Link2,
+  MessageCircle,
+  Palette,
+  Smartphone,
+} from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/auth";
 import { signupEnabled } from "@/lib/flags";
+import { normalizePhone } from "@/lib/whatsapp/send";
 
 export const metadata = {
   title: "Lleva tu barbería a BarberDesk",
@@ -44,6 +53,13 @@ const FEATURES = [
   },
 ];
 
+function demoRequestUrl(): string | null {
+  const phone = normalizePhone(process.env.SALES_WHATSAPP ?? "");
+  if (!phone) return null;
+  const text = "Hola, quiero una demo de BarberDesk para mi barbería";
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
 /**
  * Landing de ventas para dueños de barbería — a propósito NO enlazada desde
  * ningún lado del sitio público (ver /): se comparte en privado con cada
@@ -51,6 +67,7 @@ const FEATURES = [
  */
 export default async function SociosPage() {
   const session = await getSession();
+  const demoUrl = demoRequestUrl();
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-14 px-4 py-5 sm:px-6">
@@ -86,10 +103,21 @@ export default async function SociosPage() {
             <Button asChild size="lg">
               <Link href="/select-tenant">Ir a mis barberías</Link>
             </Button>
+          ) : demoUrl ? (
+            <>
+              <Button asChild size="lg">
+                <a href={demoUrl} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle /> Pide tu demo
+                </a>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/login">Ya tengo cuenta</Link>
+              </Button>
+            </>
           ) : signupEnabled ? (
             <>
               <Button asChild size="lg">
-                <Link href="/signup">Crea tu barbería gratis</Link>
+                <Link href="/signup">Crea tu barbería</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
                 <Link href="/login">Ya tengo cuenta</Link>
