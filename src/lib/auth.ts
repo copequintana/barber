@@ -13,9 +13,6 @@ import { signupEnabled } from "./flags";
  * Email + contraseña con sesiones en base de datos. El tenant activo vive en
  * una cookie propia y el rol se verifica contra `memberships` en cada request
  * (ver guards.ts) — nunca hay roles obsoletos cacheados.
- *
- * El registro público se controla con ALLOW_SIGNUP (ver flags.ts): se abre
- * para crear las cuentas y luego puede cerrarse sin afectar a las existentes.
  */
 
 // En Vercel el dominio cambia entre despliegues de vista previa, así que se
@@ -68,8 +65,9 @@ export const auth = betterAuth({
           select: { id: true },
         }),
         prisma.membership.findFirst({
-          where: { userId: user.id, role: "barber" },
-          select: { tenant: { select: { name: true } } },
+          where: { userId: user.id, tenant: { isDemo: false } },
+          orderBy: { tenant: { createdAt: "desc" } },
+          select: { role: true, tenant: { select: { name: true } } },
         }),
         prisma.user.findUnique({
           where: { id: user.id },
@@ -80,7 +78,7 @@ export const auth = betterAuth({
         url,
         isNewAccount: !hasPassword,
         tenantName: membership?.tenant.name,
-        role: !membership && profile?.isVendor ? "vendor" : "barber",
+        role: membership ? (membership.role === "barber" ? "barber" : "owner") : profile?.isVendor ? "vendor" : "barber",
       });
       const result = await sendEmail({ to: user.email, subject, html });
       if (!result.ok) {

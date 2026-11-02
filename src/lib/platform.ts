@@ -1,5 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { prisma, withTenant } from "./db";
 import { DEMO_EMAIL_DOMAIN, getActiveDemo } from "./demo";
+import { slugProblem } from "./slugs";
 
 /**
  * Consola de plataforma (T20): operaciones de datos. El guard de acceso
@@ -191,4 +193,92 @@ export async function getTenantSupportView(actor: PlatformUser, tenantId: string
   });
 
   return { tenant, ...data, audit };
+}
+
+export class PlatformError extends Error {}
+
+export type NewBarbershop = {
+  name: string;
+  slug: string;
+  timezone: string;
+  currency: string;
+  ownerName: string;
+  ownerEmail: string;
+};
+
+export async function createBarbershop(actor: PlatformUser, input: NewBarbershop) {
+  const problem = slugProblem(input.slug);
+  if (problem) throw new PlatformError(problem);
+  const email = input.ownerEmail.trim().toLowerCase();
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const owner = await tx.user.upsert({ where: { email }, update: {}, create: { email, name: input.ownerName } });
+      const tenant = await tx.tenant.create({
+        data: {
+          name: input.name,
+          slug: input.slug,
+          timezone: input.timezone,
+          currency: input.currency,
+          memberships: { create: { userId: owner.id, role: "owner" } },
+        },
+      });
+      const credential = await tx.account.findFirst({ where: { userId: owner.id, providerId: "credential" }, select: { id: true } });
+      return { tenant, owner, needsPassword: !credential };
+    });
+    await logPlatformAction({ userId: actor.id, tenantId: created.tenant.id, action: "create_tenant", detail: `${input.name} · ${email}` });
+    return created;
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") throw new PlatformError("Ese link ya lo usa otra barbería");
+    throw e;
+  }
+}
+
+export async function canManageBarbershop(actor: PlatformUser, tenantId: string, isAdmin: boolean): Promise<boolean> {
+  if (isAdmin) return true;
+  const created = await prisma.platformAuditLog.findFirst({
+    where: { action: "create_tenant", tenantId, userId: actor.id },
+    select: { id: true },
+  });
+  return created !== null;
+}
+
+export async function ownerNeedingPassword(tenantId: string) {
+  const owner = await prisma.membership.findFirst({
+    where: { tenantId, role: "owner", user: { accounts: { none: { providerId: "credential" } } } },
+    select: { user: { select: { id: true, email: true } } },
+  });
+  return owner?.user ?? null;
+}
+
+export async function listCreatedBy(actorId: string) {
+  const created = await prisma.platformAuditLog.findMany({
+    where: { action: "create_tenant", userId: actorId, tenantId: { not: null } },
+    select: { tenantId: true },
+  });
+  const tenants = await prisma.tenant.findMany({
+    where: { id: { in: created.map((c) => c.tenantId!) } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      suspended: true,
+      createdAt: true,
+      memberships: {
+        where: { role: "owner" },
+        select: { user: { select: { email: true, accounts: { where: { providerId: "credential" }, select: { id: true } } } } },
+      },
+    },
+  });
+  return tenants.map((t) => {
+    const owner = t.memberships[0]?.user ?? null;
+    return {
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      suspended: t.suspended,
+      createdAt: t.createdAt,
+      owner: owner ? { email: owner.email, pending: owner.accounts.length === 0 } : null,
+    };
+  });
 }

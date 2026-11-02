@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BrandMark } from "@/components/brand-mark";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ export function AuthShell({
     <main className="flex min-h-screen w-full items-center justify-center px-4 py-10">
       <div className={cn("flex w-full flex-col gap-6", wide ? "max-w-md" : "max-w-sm")}>
         <Link href="/" className="flex items-center gap-2 self-center">
-          <Image src="/logo-mark.png" alt="" width={28} height={28} />
+          <BrandMark />
           <span className="font-semibold tracking-tight">BarberDesk</span>
         </Link>
         <Card className="gap-5 py-6">

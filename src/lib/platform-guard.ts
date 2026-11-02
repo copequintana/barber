@@ -48,3 +48,9 @@ export async function requireVendor(): Promise<PlatformUser> {
   if (!canRunDemos(user)) redirect("/select-tenant");
   return { id: user.id, email: user.email };
 }
+
+export async function requireStaff(): Promise<PlatformUser & { isAdmin: boolean }> {
+  const user = await currentUser();
+  if (!canRunDemos(user)) redirect("/select-tenant");
+  return { id: user.id, email: user.email, isAdmin: isPlatformAdminUser(user) };
+}

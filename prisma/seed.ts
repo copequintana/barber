@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { auth } from "../src/lib/auth";
 import { prisma, withTenant } from "../src/lib/db";
+import { ensureUserWithPassword } from "./seed-users";
 
 /**
  * Seed de desarrollo: dos tenants con barberos, servicios y horarios,
@@ -24,6 +24,10 @@ async function main() {
     ownerEmail: "dueno@elpatron.test",
     barbers: ["Andrés"],
   });
+  const admin = await ensureUserWithPassword("plataforma@barberdesk.test", "Admin Plataforma", DEV_PASSWORD);
+  const vendor = await ensureUserWithPassword("vendedor@barberdesk.test", "Vendedor Plataforma", DEV_PASSWORD);
+  await prisma.user.update({ where: { id: admin.id }, data: { isPlatformAdmin: true } });
+  await prisma.user.update({ where: { id: vendor.id }, data: { isVendor: true } });
   console.log(
     `Seed completado: tenants la-cueva y el-patron (contraseña dev: ${DEV_PASSWORD})`,
   );
@@ -36,23 +40,7 @@ async function seedTenant(input: {
   ownerEmail: string;
   barbers: string[];
 }) {
-  // signUpEmail crea usuario + cuenta con contraseña (requiere ALLOW_SIGNUP
-  // abierto, el valor por defecto).
-  let owner = await prisma.user.findUnique({
-    where: { email: input.ownerEmail },
-  });
-  if (!owner) {
-    await auth.api.signUpEmail({
-      body: {
-        email: input.ownerEmail,
-        password: DEV_PASSWORD,
-        name: `Dueño ${input.name}`,
-      },
-    });
-    owner = await prisma.user.findUniqueOrThrow({
-      where: { email: input.ownerEmail },
-    });
-  }
+  const owner = await ensureUserWithPassword(input.ownerEmail, `Dueño ${input.name}`, DEV_PASSWORD);
 
   const existing = await prisma.tenant.findUnique({
     where: { slug: input.slug },

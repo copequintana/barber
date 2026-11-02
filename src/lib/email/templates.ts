@@ -173,14 +173,16 @@ export function setPasswordEmail(input: {
   url: string;
   isNewAccount: boolean;
   tenantName?: string | null;
-  role?: "barber" | "vendor";
+  role?: "barber" | "vendor" | "owner";
 }): { subject: string; html: string } {
   const accent = DEFAULT_BRAND_COLOR;
   const intro = !input.isNewAccount
     ? "Pediste restablecer tu contraseña de BarberDesk. Elige una nueva:"
     : input.role === "vendor"
       ? "Te dieron acceso como vendedor de BarberDesk. Configura tu contraseña para entrar y mostrar la demo a las barberías:"
-      : `Te dieron acceso como barbero${
+      : input.role === "owner"
+        ? `Dimos de alta ${input.tenantName ? `<strong>${esc(input.tenantName)}</strong>` : "tu barbería"} en BarberDesk. Configura tu contraseña para entrar y dejar listos tus servicios, barberos y horario:`
+        : `Te dieron acceso como barbero${
           input.tenantName ? ` en <strong>${esc(input.tenantName)}</strong>` : ""
         } en BarberDesk. Configura tu contraseña para entrar a tu panel:`;
   const body = `

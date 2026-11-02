@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   CalendarCheck,
@@ -13,6 +12,7 @@ import {
   Store,
   Trash2,
 } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CopyButton } from "@/components/copy-button";
@@ -73,11 +73,14 @@ export default async function DemoPage({
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-10">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo-mark.png" alt="" width={28} height={28} />
+          <BrandMark />
           <span className="font-semibold tracking-tight">BarberDesk</span>
           <Badge variant="secondary">Demo de ventas</Badge>
         </Link>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/platform/alta">Dar de alta una barbería</Link>
+          </Button>
           {ownTenants > 0 ? (
             <Button asChild variant="ghost" size="sm">
               <Link href="/select-tenant">Mis barberías</Link>

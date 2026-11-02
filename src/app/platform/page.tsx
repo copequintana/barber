@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { LogOut, Play, UserPlus } from "lucide-react";
+import { LogOut, Play, Store, UserPlus } from "lucide-react";
 import { FlashToast } from "@/components/admin/flash-toast";
 import { PageHeader } from "@/components/admin/page-header";
 import { SubmitButton } from "@/components/admin/submit-button";
@@ -57,6 +57,11 @@ export default async function PlatformPage() {
         description={`Sesión: ${actor.email}`}
         actions={
           <>
+            <Button asChild>
+              <Link href="/platform/alta">
+                <Store /> Dar de alta barbería
+              </Link>
+            </Button>
             <Button asChild variant="outline">
               <Link href="/demo">
                 <Play /> Demo de ventas

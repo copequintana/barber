@@ -10,7 +10,7 @@ export default function TenantNotFound() {
         dirección con tu barbero.
       </p>
       <Link
-        href="/"
+        href="/directorio"
         className="mt-2 rounded-lg border bg-card px-4 py-2 text-sm font-medium hover:bg-muted"
       >
         Buscar barberías cerca de ti

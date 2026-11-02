@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { signupEnabled } from "@/lib/flags";
 import { ACTIVE_TENANT_COOKIE, requireUser } from "@/lib/guards";
 import { RESERVED_SLUGS, SLUG_RE } from "@/lib/tenancy";
 import { CURRENCIES, TIMEZONES } from "@/lib/timezones";
@@ -30,6 +31,7 @@ export async function createTenantAction(
   formData: FormData,
 ): Promise<OnboardingState> {
   const user = await requireUser();
+  if (!signupEnabled) redirect("/onboarding");
 
   const parsed = schema.safeParse({
     name: formData.get("name"),

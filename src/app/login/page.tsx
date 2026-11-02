@@ -22,14 +22,12 @@ export default async function LoginPage({
       title="Entrar"
       description="Administra la agenda de tu barbería."
       footer={
-        signupEnabled ? (
-          <p>
-            ¿No tienes cuenta?{" "}
-            <Link className="font-medium text-foreground underline underline-offset-4" href="/signup">
-              Crea tu cuenta
-            </Link>
-          </p>
-        ) : null
+        <p>
+          ¿No tienes cuenta?{" "}
+          <Link className="font-medium text-foreground underline underline-offset-4" href={signupEnabled ? "/signup" : "/"}>
+            {signupEnabled ? "Crea tu cuenta" : "Pide tu demo"}
+          </Link>
+        </p>
       }
     >
       <div className="flex flex-col gap-4">

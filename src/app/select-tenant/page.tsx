@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ChevronRight, LogOut, Play, Plus } from "lucide-react";
+import { ChevronRight, LogOut, Play, Plus, Store } from "lucide-react";
 import { AuthShell } from "@/components/auth-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
+import { signupEnabled } from "@/lib/flags";
 import { prisma } from "@/lib/db";
 import { isExpiredDemo, purgeExpiredDemos } from "@/lib/demo";
 import {
@@ -95,17 +96,25 @@ export default async function SelectTenantPage() {
           ))}
         </ul>
         {vendor ? (
-          <Button asChild className="w-full">
-            <Link href="/demo">
-              <Play /> Demo de ventas
+          <>
+            <Button asChild className="w-full">
+              <Link href="/demo">
+                <Play /> Demo de ventas
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/platform/alta">
+                <Store /> Dar de alta una barbería
+              </Link>
+            </Button>
+          </>
+        ) : signupEnabled ? (
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/onboarding">
+              <Plus /> Crear otra barbería
             </Link>
           </Button>
         ) : null}
-        <Button asChild variant="outline" className="w-full">
-          <Link href="/onboarding">
-            <Plus /> Crear otra barbería
-          </Link>
-        </Button>
       </div>
     </AuthShell>
   );
